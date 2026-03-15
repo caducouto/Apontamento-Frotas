@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frotas App</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+  --accent:#4f8ef7; --accent2:#f7934f; --green:#3ecf8e; --red:#f75555;
+  --yellow:#f7d44f; --text:#e8eaf0; --text2:#8b90a7;
+  --font-head:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
+  --radius:12px; --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;font-size:14px}
+.hidden{display:none!important}
+
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse at 20% 50%,#0d1f3c 0%,var(--bg) 55%),
+  radial-gradient(ellipse at 80% 20%,#1a1440 0%,transparent 50%)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;
+  padding:48px 40px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.login-logo{font-family:var(--font-head);font-size:36px;font-weight:800;margin-bottom:4px;
+  background:linear-gradient(135deg,var(--text) 40%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-logo span{background:linear-gradient(135deg,var(--accent),#7eb3ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-sub{color:var(--text2);font-size:13px;margin-bottom:32px}
+
+.form-group{margin-bottom:16px}
+label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:7px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);font-family:var(--font-body);font-size:15px;
+  padding:12px 16px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,247,.15)}
+select option{background:var(--surface2)}
+textarea{resize:vertical;min-height:80px}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:12px 20px;border-radius:10px;border:none;font-family:var(--font-body);
+  font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#3a7de8}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-full{width:100%}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-icon{background:transparent;border:none;color:var(--red);cursor:pointer;
+  padding:4px 8px;border-radius:6px;font-size:15px;transition:background .15s}
+.btn-icon:hover{background:rgba(247,85,85,.15)}
+
+.alert{border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px}
+.alert-error{background:rgba(247,85,85,.12);border:1px solid rgba(247,85,85,.4);color:var(--red)}
+.alert-success{background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.4);color:var(--green)}
+
+.topnav{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;gap:8px}
+.topnav-title{font-family:var(--font-head);font-size:18px;font-weight:700;white-space:nowrap}
+.topnav-title span{color:var(--accent)}
+.topnav-right{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.topnav-user{font-size:12px;color:var(--text2);margin-right:4px;
+  max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.card-title{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:4px}
+.card-sub{color:var(--text2);font-size:12px;margin-bottom:20px}
+
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--surface2);
+  border:1px solid var(--accent);border-radius:8px;max-height:220px;overflow-y:auto;
+  z-index:200;margin-top:2px;box-shadow:var(--shadow)}
+.autocomplete-item{padding:10px 14px;cursor:pointer;font-size:13px;transition:background .1s;
+  display:flex;align-items:center;gap:8px}
+.autocomplete-item:hover{background:rgba(79,142,247,.15);color:var(--accent)}
+.autocomplete-item .ac-badge{font-size:10px;color:var(--text2)}
+.ac-empty{padding:12px 14px;font-size:13px;color:var(--text2);text-align:center}
+.ac-selected{border-color:var(--green)!important}
+.ac-selected-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(79,142,247,.15);
+  border:1px solid rgba(79,142,247,.3);border-radius:6px;padding:3px 10px;font-size:13px;
+  color:var(--accent);margin-top:6px}
+.ac-selected-tag button{background:none;border:none;color:var(--text2);cursor:pointer;
+  font-size:14px;padding:0;line-height:1}
+.ac-selected-tag button:hover{color:var(--red)}
+.ac-hint{font-size:11px;color:var(--text2);margin-top:5px}
+
+#admin-screen{display:flex;flex-direction:column;min-height:100vh}
+.admin-body{display:flex;flex:1}
+.admin-sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);
+  padding:20px 12px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.sidebar-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
+  border:none;font-family:var(--font-body);font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .15s;background:transparent;color:var(--text2);text-align:left;width:100%}
+.sidebar-btn:hover{background:var(--surface2);color:var(--text)}
+.sidebar-btn.active{background:rgba(79,142,247,.15);color:var(--accent)}
+.sidebar-icon{font-size:16px;width:20px;text-align:center}
+.admin-content{flex:1;padding:28px;overflow-y:auto}
+.admin-header{margin-bottom:24px}
+.admin-header h2{font-family:var(--font-head);font-size:22px;font-weight:800}
+.admin-header p{color:var(--text2);font-size:13px;margin-top:4px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.stat-label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:8px}
+.stat-value{font-family:var(--font-head);font-size:28px;font-weight:800}
+.stat-value.orange{color:var(--accent2)}
+
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:20px}
+.filter-bar h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.filter-bar p{color:var(--text2);font-size:12px;margin-bottom:16px}
+.filter-row{display:flex;gap:12px;align-items:flex-end}
+.filter-row .form-group{margin-bottom:0;flex:1}
+
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border)}
+.table-header h3{font-size:14px;font-weight:600}
+.table-header p{color:var(--text2);font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:11px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);
+  border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid rgba(46,51,80,.5);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(62,207,142,.15);color:var(--green);border:1px solid rgba(62,207,142,.3)}
+.badge-yellow{background:rgba(247,212,79,.15);color:var(--yellow);border:1px solid rgba(247,212,79,.3)}
+.badge-blue{background:rgba(79,142,247,.15);color:var(--accent);border:1px solid rgba(79,142,247,.3)}
+
+.manage-add{display:flex;gap:10px;margin-bottom:16px}
+.manage-add input{flex:1}
+.manage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.manage-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+.ferias-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(247,212,79,.15);
+  color:var(--yellow);border:1px solid rgba(247,212,79,.3);border-radius:6px;
+  font-size:11px;padding:2px 8px}
+.ferias-tag button{background:none;border:none;color:var(--yellow);cursor:pointer;font-size:13px;padding:0;line-height:1}
+.import-box{border:1px dashed var(--border);border-radius:12px;padding:16px;margin-bottom:16px;background:rgba(79,142,247,.04)}
+.import-box-title{font-weight:700;font-size:14px;margin-bottom:4px}
+.import-box-sub{font-size:12px;color:var(--text2);margin-bottom:10px}
+.import-box textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-size:13px;font-family:var(--font-body);resize:vertical;margin-bottom:10px;min-height:90px}
+  padding:10px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500}
+.search-input{margin-bottom:14px}
+
+.colab-add{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;margin-bottom:16px;align-items:end}
+.colab-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.colab-info strong{font-size:13px;font-weight:600}
+.colab-info small{color:var(--text2);font-size:12px;display:block}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-card h3{font-size:13px;font-weight:600;margin-bottom:4px}
+.chart-card p{color:var(--text2);font-size:12px;margin-bottom:16px}
+.chart-wrap{position:relative;height:220px}
+.dash-filter{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:24px}
+.dash-filter-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.dash-filter-row .form-group{margin-bottom:0;flex:1;min-width:140px}
+
+.export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.export-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;text-align:center}
+.export-card .icon{font-size:32px;margin-bottom:12px}
+.export-card h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.export-card p{font-size:12px;color:var(--text2);margin-bottom:16px}
+
+#toast{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 18px;font-size:13px;box-shadow:var(--shadow);animation:slideIn .3s ease;
+  display:flex;align-items:center;gap:8px}
+.toast-item.success{border-color:rgba(62,207,142,.4);color:var(--green)}
+.toast-item.error{border-color:rgba(247,85,85,.4);color:var(--red)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .admin-sidebar{width:52px}
+  .sidebar-btn span:last-child{display:none}
+  .input-row{grid-template-columns:1fr}
+  .export-grid{grid-template-columns:1fr}
+  .colab-add{grid-template-columns:1fr}
+}
+.ferias-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(247,212,79,.15);
+  color:var(--yellow);border:1px solid rgba(247,212,79,.3);border-radius:6px;
+  font-size:11px;padding:2px 8px}
+.ferias-tag button{background:none;border:none;color:var(--yellow);cursor:pointer;font-size:13px;padding:0;line-height:1}
+.import-box{border:1px dashed var(--border);border-radius:12px;padding:16px;margin-bottom:16px;background:rgba(79,142,247,.04)}
+.import-box-title{font-weight:700;font-size:14px;margin-bottom:4px}
+.import-box-sub{font-size:12px;color:var(--text2);margin-bottom:10px}
+.import-box textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-size:13px;font-family:var(--font-body);resize:vertical;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Frotas<span>App</span></div>
+    <div class="login-sub">Sistema de Apontamento de Manutenção de Frotas</div>
+
+    <div id="login-step-mat">
+      <div class="form-group">
+        <label>Matrícula</label>
+        <input type="text" id="input-matricula" placeholder="Digite sua matrícula"
+          inputmode="numeric" onkeydown="if(event.key==='Enter') verificarMatricula()" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="verificarMatricula()">Continuar →</button>
+    </div>
+
+    <div id="login-step-senha" class="hidden">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:32px;margin-bottom:6px">🔐</div>
+        <div style="font-weight:700;font-size:15px">Acesso Administrador</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Digite a senha para continuar</div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="input-admin-pass" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') loginAdmin()" />
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="voltarLogin()">← Voltar</button>
+        <button class="btn btn-primary" style="flex:2" onclick="loginAdmin()">Entrar</button>
+      </div>
+    </div>
+
+    <div id="login-error" class="alert alert-error hidden" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- MECÂNICO -->
+<div id="mecanico-screen" class="hidden">
+  <nav class="topnav">
+    <div class="topnav-title">Frotas<span>App</span></div>
+    <div class="topnav-right">
+      <span class="topnav-user" id="mecanico-nome-nav"></span>
+      <button class="btn btn-ghost btn-sm" onclick="showHistorico()">📋 Histórico</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">⬅ Sair</button>
+    </div>
+  </nav>
+  <div id="offline-banner" class="hidden" style="background:rgba(247,147,79,.15);border-bottom:1px solid rgba(247,147,79,.4);
+    padding:8px 20px;text-align:center;font-size:13px;color:var(--accent2)">
+    📶 Sem conexão — os apontamentos serão salvos localmente e sincronizados quando voltar a internet
+  </div>
+  <div style="max-width:600px;margin:0 auto;padding:20px 16px">
+    <div id="apontamento-esquecido-banner"></div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="background:rgba(79,142,247,.15);border-radius:12px;padding:10px;font-size:22px">🔧</div>
+        <div>
+          <div class="card-title" style="margin:0">Novo Apontamento</div>
+          <div id="mecanico-boas-vindas" style="color:var(--text2);font-size:12px;margin-top:2px"></div>
+        </div>
+      </div>
+      <div class="form-group"><label>Data *</label><input type="date" id="apo-data" /></div>
+      <div class="form-group">
+        <label>Tipo de Manutenção *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="apo-tipo-search" placeholder="🔍 Buscar tipo..." autocomplete="off"
+            oninput="acSearch(this,'tipos','apo-tipo-list','apo-tipo-val')"
+            onfocus="acSearch(this,'tipos','apo-tipo-list','apo-tipo-val')" />
+          <input type="hidden" id="apo-tipo-val" />
+          <div class="autocomplete-list hidden" id="apo-tipo-list"></div>
+        </div>
+        <div id="apo-tipo-tag"></div>
+        <div class="ac-hint">Selecione um tipo da lista</div>
+      </div>
+
+      <div class="form-group">
+        <label>Placa do Veículo *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="apo-placa-search" placeholder="🔍 Buscar placa..." autocomplete="off"
+            oninput="acSearch(this,'placas','apo-placa-list','apo-placa-val')"
+            onfocus="acSearch(this,'placas','apo-placa-list','apo-placa-val')" />
+          <input type="hidden" id="apo-placa-val" />
+          <div class="autocomplete-list hidden" id="apo-placa-list"></div>
+        </div>
+        <div id="apo-placa-tag"></div>
+        <div class="ac-hint">Selecione uma placa da lista</div>
+      </div>
+
+      <div class="input-row">
+        <div class="form-group"><label>Hora Inicial *</label><input type="time" id="apo-hora-ini" /></div>
+        <div class="form-group"><label>Hora Final *</label><input type="time" id="apo-hora-fim" /></div>
+      </div>
+
+      <div class="form-group">
+        <label>Evento *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="apo-evento-search" placeholder="🔍 Buscar evento..." autocomplete="off"
+            oninput="acSearch(this,'eventos','apo-evento-list','apo-evento-val')"
+            onfocus="acSearch(this,'eventos','apo-evento-list','apo-evento-val')" />
+          <input type="hidden" id="apo-evento-val" />
+          <div class="autocomplete-list hidden" id="apo-evento-list"></div>
+        </div>
+        <div id="apo-evento-tag"></div>
+        <div class="ac-hint">Selecione um evento da lista</div>
+      </div>
+
+      <div class="form-group">
+        <label>Subsistema *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="apo-subsistema-search" placeholder="🔍 Buscar subsistema..." autocomplete="off"
+            oninput="acSearch(this,'subsistemas','apo-subsistema-list','apo-subsistema-val')"
+            onfocus="acSearch(this,'subsistemas','apo-subsistema-list','apo-subsistema-val')" />
+          <input type="hidden" id="apo-subsistema-val" />
+          <div class="autocomplete-list hidden" id="apo-subsistema-list"></div>
+        </div>
+        <div id="apo-subsistema-tag"></div>
+        <div class="ac-hint">Selecione um subsistema da lista</div>
+      </div>
+
+      <div class="form-group"><label>Observação</label>
+        <textarea id="apo-obs" placeholder="Adicione observações se necessário"></textarea>
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-registrar" onclick="registrarApontamento()">
+        Registrar Apontamento
+      </button>
+      <div id="apo-msg" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTÓRICO -->
+<div id="historico-screen" class="hidden">
+  <nav class="topnav">
+    <div class="topnav-title">Frotas<span>App</span></div>
+    <div class="topnav-right">
+      <button class="btn btn-ghost btn-sm" onclick="showMecanico()">← Voltar</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">⬅ Sair</button>
+    </div>
+  </nav>
+  <div style="max-width:900px;margin:0 auto;padding:28px 20px">
+    <div style="font-family:var(--font-head);font-size:22px;font-weight:800;margin-bottom:4px">Meu Histórico</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px">Seus apontamentos registrados</div>
+    <div id="historico-content"></div>
+  </div>
+</div>
+
+
+<!-- BORRACHEIRO -->
+<div id="borracheiro-screen" class="hidden">
+  <nav class="topnav">
+    <div class="topnav-title">Frotas<span>App</span></div>
+    <div class="topnav-right">
+      <span class="topnav-user" id="borracheiro-nome-nav"></span>
+      <button class="btn btn-ghost btn-sm" onclick="showHistoricoBorracheiro()">📋 Histórico</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">⬅ Sair</button>
+    </div>
+  </nav>
+  <div style="max-width:720px;margin:0 auto;padding:28px 20px">
+    <div id="apontamento-esquecido-banner-bor"></div>
+    <div style="font-family:var(--font-head);font-size:26px;font-weight:800;margin-bottom:4px">Ordem de Serviço — Borracharia</div>
+    <div id="borracheiro-boas-vindas" style="color:var(--text2);font-size:13px;margin-bottom:28px"></div>
+    <div class="card">
+      <div class="card-title">Registrar Serviço de Pneu</div>
+      <div class="card-sub">Preencha todos os campos obrigatórios</div>
+
+      <div class="form-group"><label>Data *</label><input type="date" id="bor-data" /></div>
+
+      <div class="form-group">
+        <label>Placa do Veículo *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="bor-placa-search" placeholder="🔍 Buscar placa..." autocomplete="off"
+            oninput="acSearch(this,'placas','bor-placa-list','bor-placa-val')"
+            onfocus="acSearch(this,'placas','bor-placa-list','bor-placa-val')" />
+          <input type="hidden" id="bor-placa-val" />
+          <div class="autocomplete-list hidden" id="bor-placa-list"></div>
+        </div>
+        <div id="bor-placa-tag"></div>
+        <div class="ac-hint">Selecione uma placa da lista</div>
+      </div>
+
+      <div class="form-group"><label>KM do Veículo *</label>
+        <input type="number" id="bor-km" placeholder="Ex: 125000" min="0" />
+      </div>
+
+      <div class="input-row">
+        <div class="form-group"><label>Hora Inicial *</label><input type="time" id="bor-hora-ini" /></div>
+        <div class="form-group"><label>Hora Final *</label><input type="time" id="bor-hora-fim" /></div>
+      </div>
+
+      <div class="form-group"><label>Tipo de Serviço *</label>
+        <select id="bor-servico">
+          <option value="">Selecione...</option>
+          <option value="Troca">Troca</option>
+          <option value="Calibragem">Calibragem</option>
+          <option value="Rodízio">Rodízio</option>
+        </select>
+      </div>
+
+      <div class="input-row">
+        <div class="form-group"><label>Eixo *</label>
+          <select id="bor-eixo">
+            <option value="">Selecione...</option>
+            <option value="1º Eixo">1º Eixo</option>
+            <option value="2º Eixo">2º Eixo</option>
+            <option value="3º Eixo">3º Eixo</option>
+            <option value="4º Eixo">4º Eixo</option>
+            <option value="5º Eixo">5º Eixo</option>
+            <option value="Estepe">Estepe</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Posição *</label>
+          <select id="bor-posicao">
+            <option value="">Selecione...</option>
+            <option value="Lado Direito Externo">Direito Externo</option>
+            <option value="Lado Direito Interno">Direito Interno</option>
+            <option value="Lado Esquerdo Externo">Esquerdo Externo</option>
+            <option value="Lado Esquerdo Interno">Esquerdo Interno</option>
+            <option value="Central">Central</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group"><label>Número / Código do Pneu</label>
+        <input type="text" id="bor-pneu" placeholder="Ex: 001234 ou DOT..." style="text-transform:uppercase" />
+      </div>
+
+      <div class="form-group"><label>Observação</label>
+        <textarea id="bor-obs" placeholder="Adicione observações se necessário"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-registrar-bor" onclick="registrarBorracheiro()">
+        Registrar Serviço
+      </button>
+      <div id="bor-msg" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTÓRICO BORRACHEIRO -->
+<div id="historico-bor-screen" class="hidden">
+  <nav class="topnav">
+    <div class="topnav-title">Frotas<span>App</span></div>
+    <div class="topnav-right">
+      <button class="btn btn-ghost btn-sm" onclick="showBorracheiro()">← Voltar</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">⬅ Sair</button>
+    </div>
+  </nav>
+  <div style="max-width:960px;margin:0 auto;padding:28px 20px">
+    <div style="font-family:var(--font-head);font-size:22px;font-weight:800;margin-bottom:4px">Meu Histórico — Borracharia</div>
+    <div style="color:var(--text2);font-size:13px;margin-bottom:20px">Seus serviços registrados</div>
+    <div id="historico-bor-content"></div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen" class="hidden">
+  <nav class="topnav">
+    <div class="topnav-title">Frotas<span>App</span> <span style="font-size:12px;color:var(--text2);font-family:var(--font-body);font-weight:400">Admin</span></div>
+    <div class="topnav-right">
+      <button class="btn btn-ghost btn-sm" onclick="sincronizarSheets()">🔄 Sincronizar</button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">⬅ Sair</button>
+    </div>
+  </nav>
+  <div class="admin-body">
+    <aside class="admin-sidebar">
+      <button class="sidebar-btn active" onclick="showAdminTab('apontamentos')" id="tbtn-apontamentos"><span class="sidebar-icon">📋</span><span>Apontamentos</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('placas')" id="tbtn-placas"><span class="sidebar-icon">🚗</span><span>Placas</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('colaboradores')" id="tbtn-colaboradores"><span class="sidebar-icon">👤</span><span>Colaboradores</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('tipos')" id="tbtn-tipos"><span class="sidebar-icon">🔧</span><span>Tipos Manutenção</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('eventos')" id="tbtn-eventos"><span class="sidebar-icon">📌</span><span>Eventos</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('subsistemas')" id="tbtn-subsistemas"><span class="sidebar-icon">⚙️</span><span>Subsistemas</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('dashboard')" id="tbtn-dashboard"><span class="sidebar-icon">📊</span><span>Dashboard</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('borracharia')" id="tbtn-borracharia"><span class="sidebar-icon">🔴</span><span>Borracharia</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('alertas')" id="tbtn-alertas"><span class="sidebar-icon">🚨</span><span>Alertas</span></button>
+      <button class="sidebar-btn" onclick="showAdminTab('exportar')" id="tbtn-exportar"><span class="sidebar-icon">⬇️</span><span>Exportar</span></button>
+    </aside>
+    <main class="admin-content">
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total de Apontamentos</div><div class="stat-value" id="stat-total">0</div></div>
+        <div class="stat-card"><div class="stat-label">Colaboradores</div><div class="stat-value" id="stat-colab">0</div></div>
+        <div class="stat-card"><div class="stat-label">Placas</div><div class="stat-value" id="stat-placas">0</div></div>
+        <div class="stat-card"><div class="stat-label">Não Sincronizados</div><div class="stat-value orange" id="stat-sync">0</div></div>
+      </div>
+
+      <!-- APONTAMENTOS -->
+      <div id="atab-apontamentos" class="atab">
+        <div class="admin-header"><h2>Apontamentos</h2><p>Gerenciar todos os apontamentos</p></div>
+        <div class="filter-bar">
+          <h3>Filtrar por Mês</h3><p>Selecione o mês e ano para filtrar</p>
+          <div class="filter-row">
+            <div class="form-group"><label>Mês</label>
+              <select id="filtro-mes">
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                <option value="3">Março</option><option value="4">Abril</option>
+                <option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option>
+                <option value="9">Setembro</option><option value="10">Outubro</option>
+                <option value="11">Novembro</option><option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Ano</label><select id="filtro-ano"></select></div>
+            <button class="btn btn-primary" onclick="filtrarApontamentos()">Filtrar</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><h3 id="apo-table-title">Apontamentos</h3><p id="apo-table-sub"></p></div>
+          <div style="overflow-x:auto">
+            <table><thead><tr>
+              <th>Data</th><th>Colaborador</th><th>Tipo</th><th>Placa</th>
+              <th>Evento</th><th>Subsistema</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th><th>Ações</th>
+            </tr></thead><tbody id="apo-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLACAS -->
+      <div id="atab-placas" class="atab hidden">
+        <div class="admin-header"><h2>Placas</h2><p>Adicione uma por uma ou importe várias de uma vez</p></div>
+        <div class="manage-add">
+          <input type="text" id="nova-placa" placeholder="Nova placa (ex: ABC1234)" style="text-transform:uppercase"
+            onkeydown="if(event.key==='Enter') adicionarItem('placas','nova-placa','placas-grid')" />
+          <button class="btn btn-primary" onclick="adicionarItem('placas','nova-placa','placas-grid')">+ Adicionar</button>
+        </div>
+        <div class="import-box">
+          <div class="import-box-title">📋 Importar em massa</div>
+          <div class="import-box-sub">Cole aqui a coluna copiada da planilha — uma placa por linha, colunas extras são ignoradas automaticamente</div>
+          <textarea id="import-placas" placeholder="Cole as placas aqui..."></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="importarLista('placas','import-placas','import-placas-result')">⬆ Importar</button>
+            <div id="import-placas-result" style="font-size:13px"></div>
+          </div>
+        </div>
+        <input type="text" class="search-input" placeholder="Buscar placa..." oninput="filtrarManage(this,'placas-grid')" />
+        <div class="manage-grid" id="placas-grid"></div>
+      </div>
+
+      <!-- COLABORADORES -->
+      <div id="atab-colaboradores" class="atab hidden">
+        <div class="admin-header"><h2>Colaboradores</h2><p>Gerencie colaboradores, funções, turnos e férias</p></div>
+        <div style="display:grid;grid-template-columns:1fr 2fr 1fr 1fr auto;gap:10px;margin-bottom:16px;align-items:end">
+          <div class="form-group" style="margin:0"><label>Matrícula</label><input type="text" id="nova-matricula" placeholder="Ex: 1234" /></div>
+          <div class="form-group" style="margin:0"><label>Nome</label><input type="text" id="novo-nome" placeholder="Nome completo" /></div>
+          <div class="form-group" style="margin:0"><label>Função</label>
+            <select id="nova-funcao">
+              <option value="">Sem função</option>
+              <option value="Auxiliar de Mecânico">Auxiliar de Mecânico</option>
+              <option value="Mecânico">Mecânico</option>
+              <option value="Mecânico 1">Mecânico 1</option>
+              <option value="Mecânico 2">Mecânico 2</option>
+              <option value="Mecânico 3">Mecânico 3</option>
+              <option value="Eletricista">Eletricista</option>
+              <option value="Borracheiro">Borracheiro</option>
+              <option value="Lavador">Lavador</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0"><label>Turno</label>
+            <select id="novo-turno">
+              <option value="">Sem turno</option>
+              <option value="comercial">🌅 Comercial (07-17)</option>
+              <option value="tarde">🌙 Tarde/Noite (14-00)</option>
+              <option value="12x36">🔄 12x36 (07-19)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" style="align-self:flex-end" onclick="adicionarColaborador()">+ Adicionar</button>
+        </div>
+        <div id="colab-list"></div>
+      </div>
+
+      <!-- TIPOS -->
+      <div id="atab-tipos" class="atab hidden">
+        <div class="admin-header"><h2>Tipos de Manutenção</h2><p>Adicione ou remova tipos</p></div>
+        <div class="manage-add">
+          <input type="text" id="novo-tipo" placeholder="Novo tipo" style="text-transform:uppercase"
+            onkeydown="if(event.key==='Enter') adicionarItem('tipos','novo-tipo','tipos-grid')" />
+          <button class="btn btn-primary" onclick="adicionarItem('tipos','novo-tipo','tipos-grid')">+ Adicionar</button>
+        </div>
+        <div class="manage-grid" id="tipos-grid"></div>
+      </div>
+
+      <!-- EVENTOS -->
+      <div id="atab-eventos" class="atab hidden">
+        <div class="admin-header"><h2>Eventos</h2><p>Adicione um por um ou importe vários de uma vez</p></div>
+        <div class="manage-add">
+          <input type="text" id="novo-evento" placeholder="Novo evento" style="text-transform:uppercase"
+            onkeydown="if(event.key==='Enter') adicionarItem('eventos','novo-evento','eventos-grid')" />
+          <button class="btn btn-primary" onclick="adicionarItem('eventos','novo-evento','eventos-grid')">+ Adicionar</button>
+        </div>
+        <div class="import-box">
+          <div class="import-box-title">📋 Importar em massa</div>
+          <div class="import-box-sub">Cole aqui a coluna copiada da planilha — um evento por linha, colunas extras são ignoradas</div>
+          <textarea id="import-eventos" placeholder="Cole os eventos aqui..."></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="importarLista('eventos','import-eventos','import-eventos-result')">⬆ Importar</button>
+            <div id="import-eventos-result" style="font-size:13px"></div>
+          </div>
+        </div>
+        <input type="text" class="search-input" placeholder="Buscar evento..." oninput="filtrarManage(this,'eventos-grid')" />
+        <div class="manage-grid" id="eventos-grid"></div>
+      </div>
+
+      <!-- SUBSISTEMAS -->
+      <div id="atab-subsistemas" class="atab hidden">
+        <div class="admin-header"><h2>Subsistemas</h2><p>Adicione um por um ou importe vários de uma vez</p></div>
+        <div class="manage-add">
+          <input type="text" id="novo-subsistema" placeholder="Novo subsistema" style="text-transform:uppercase"
+            onkeydown="if(event.key==='Enter') adicionarItem('subsistemas','novo-subsistema','subsistemas-grid')" />
+          <button class="btn btn-primary" onclick="adicionarItem('subsistemas','novo-subsistema','subsistemas-grid')">+ Adicionar</button>
+        </div>
+        <div class="import-box">
+          <div class="import-box-title">📋 Importar em massa</div>
+          <div class="import-box-sub">Cole aqui a coluna copiada da planilha — um subsistema por linha, colunas extras são ignoradas</div>
+          <textarea id="import-subsistemas" placeholder="Cole os subsistemas aqui..."></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="importarLista('subsistemas','import-subsistemas','import-subsistemas-result')">⬆ Importar</button>
+            <div id="import-subsistemas-result" style="font-size:13px"></div>
+          </div>
+        </div>
+        <input type="text" class="search-input" placeholder="Buscar subsistema..." oninput="filtrarManage(this,'subsistemas-grid')" />
+        <div class="manage-grid" id="subsistemas-grid"></div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="atab-dashboard" class="atab hidden">
+        <div class="admin-header"><h2>Dashboard</h2><p>Análise de horas por período</p></div>
+        <div class="dash-filter">
+          <div class="dash-filter-row">
+            <div class="form-group"><label>Mês</label>
+              <select id="dash-mes">
+                <option value="">Todos</option>
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                <option value="3">Março</option><option value="4">Abril</option>
+                <option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option>
+                <option value="9">Setembro</option><option value="10">Outubro</option>
+                <option value="11">Novembro</option><option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Ano</label><select id="dash-ano"></select></div>
+            <button class="btn btn-primary" onclick="renderDashboard()">Filtrar</button>
+          </div>
+        </div>
+
+        <!-- Cards de resumo -->
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.15),rgba(79,142,247,.05))">
+            <div class="stat-label">Total de Horas</div>
+            <div class="stat-value" id="dash-total-horas" style="color:var(--accent)">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">horas apontadas</div>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(62,207,142,.15),rgba(62,207,142,.05))">
+            <div class="stat-label">Total de Apontamentos</div>
+            <div class="stat-value" id="dash-total-apo" style="color:var(--green)">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">registros</div>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(167,139,250,.15),rgba(167,139,250,.05))">
+            <div class="stat-label">Média de Horas</div>
+            <div class="stat-value" id="dash-media-horas" style="color:#a78bfa">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">por apontamento</div>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(247,147,79,.15),rgba(247,147,79,.05))">
+            <div class="stat-label">Mecânicos Ativos</div>
+            <div class="stat-value" id="dash-mecanicos" style="color:var(--accent2)">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">no período</div>
+          </div>
+        </div>
+
+        <!-- Tabela horas por funcionário -->
+        <div class="table-wrap" style="margin-bottom:24px">
+          <div class="table-header">
+            <h3>Horas por Funcionário</h3>
+            <p>Detalhamento de horas trabalhadas por cada funcionário no período</p>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th>Funcionário</th><th style="text-align:center">Apontamentos</th>
+                <th style="text-align:right">Horas Feitas</th>
+                <th style="text-align:right">Horas Esperadas</th>
+                <th style="text-align:center">Status</th>
+                <th style="text-align:right">% da Carga</th>
+                <th style="text-align:right">Progresso</th>
+              </tr></thead>
+              <tbody id="dash-func-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card"><h3>Horas por Placa</h3><p>Top 10 placas com mais horas</p><div class="chart-wrap"><canvas id="chart-placa"></canvas></div></div>
+          <div class="chart-card"><h3>Horas por Evento</h3><p>Distribuição de horas por evento</p><div class="chart-wrap"><canvas id="chart-evento"></canvas></div></div>
+          <div class="chart-card"><h3>Horas por Subsistema</h3><p>Top 10 subsistemas</p><div class="chart-wrap"><canvas id="chart-sub"></canvas></div></div>
+          <div class="chart-card"><h3>Horas por Mecânico</h3><p>Top 10 mecânicos</p><div class="chart-wrap"><canvas id="chart-mec"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- BORRACHARIA -->
+      <div id="atab-borracharia" class="atab hidden">
+        <div class="admin-header"><h2>Borracharia</h2><p>Relatório de serviços de pneu e histórico por placa</p></div>
+
+        <!-- Filtro -->
+        <div class="dash-filter" style="margin-bottom:20px">
+          <div class="dash-filter-row">
+            <div class="form-group"><label>Mês</label>
+              <select id="bor-filtro-mes">
+                <option value="">Todos</option>
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+                <option value="3">Março</option><option value="4">Abril</option>
+                <option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option>
+                <option value="9">Setembro</option><option value="10">Outubro</option>
+                <option value="11">Novembro</option><option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Ano</label><select id="bor-filtro-ano"></select></div>
+            <button class="btn btn-primary" onclick="renderBorracharia()">Filtrar</button>
+          </div>
+        </div>
+
+        <!-- Cards resumo -->
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(79,142,247,.15),rgba(79,142,247,.05))">
+            <div class="stat-label">Total de Serviços</div>
+            <div class="stat-value" id="bor-stat-total" style="color:var(--accent)">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">no período</div>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(62,207,142,.15),rgba(62,207,142,.05))">
+            <div class="stat-label">Trocas de Pneu</div>
+            <div class="stat-value" id="bor-stat-trocas" style="color:var(--green)">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">pneus trocados</div>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(167,139,250,.15),rgba(167,139,250,.05))">
+            <div class="stat-label">Calibragens</div>
+            <div class="stat-value" id="bor-stat-calib" style="color:#a78bfa">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">realizadas</div>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(247,147,79,.15),rgba(247,147,79,.05))">
+            <div class="stat-label">Rodízios</div>
+            <div class="stat-value" id="bor-stat-rod" style="color:var(--accent2)">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">realizados</div>
+          </div>
+        </div>
+
+        <!-- Eixos mais problemáticos -->
+        <div class="table-wrap" style="margin-bottom:24px">
+          <div class="table-header"><h3>Serviços por Eixo</h3><p>Eixos com mais intervenções no período</p></div>
+          <div style="overflow-x:auto"><table>
+            <thead><tr><th>Eixo</th><th style="text-align:center">Trocas</th><th style="text-align:center">Calibragens</th><th style="text-align:center">Rodízios</th><th style="text-align:center">Total</th></tr></thead>
+            <tbody id="bor-eixo-tbody"></tbody>
+          </table></div>
+        </div>
+
+        <!-- Histórico por placa -->
+        <div class="table-wrap" style="margin-bottom:24px">
+          <div class="table-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div><h3>Histórico por Placa</h3><p>Busque uma placa para ver todos os serviços</p></div>
+            <input type="text" id="bor-busca-placa" class="search-input" style="max-width:200px;margin:0"
+              placeholder="🔍 Buscar placa..." oninput="filtrarHistoricoBorPlaca(this.value)" />
+          </div>
+          <div style="overflow-x:auto"><table>
+            <thead><tr><th>Data</th><th>Placa</th><th>KM</th><th>Serviço</th><th>Eixo</th><th>Posição</th><th>Pneu</th><th>Colaborador</th></tr></thead>
+            <tbody id="bor-historico-tbody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ALERTAS -->
+      <div id="atab-alertas" class="atab hidden">
+        <div class="admin-header"><h2>Alertas</h2><p>Veículos sem manutenção e situações que precisam de atenção</p></div>
+
+        <div class="dash-filter" style="margin-bottom:20px">
+          <div class="dash-filter-row">
+            <div class="form-group"><label>Alertar veículos sem manutenção há mais de</label>
+              <select id="alerta-dias">
+                <option value="3">3 dias</option>
+                <option value="5" selected>5 dias</option>
+                <option value="7">7 dias</option>
+                <option value="10">10 dias</option>
+                <option value="15">15 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="renderAlertas()">Verificar</button>
+          </div>
+        </div>
+
+        <div id="alertas-content"></div>
+      </div>
+
+      <!-- EXPORTAR -->
+      <div id="atab-exportar" class="atab hidden">
+        <div class="admin-header"><h2>Exportar Dados</h2><p>Baixe os dados em diferentes formatos</p></div>
+        <div class="export-grid">
+          <div class="export-card"><div class="icon">📊</div><h3>Exportar CSV Completo</h3>
+            <p>Todos os apontamentos em formato CSV compatível com Excel</p>
+            <button class="btn btn-primary" onclick="exportarCSV(false)">Baixar CSV</button></div>
+          <div class="export-card"><div class="icon">📅</div><h3>Exportar Mês Atual</h3>
+            <p>Apenas os apontamentos do mês filtrado na aba Apontamentos</p>
+            <button class="btn btn-primary" onclick="exportarCSV(true)">Baixar CSV do Mês</button></div>
+          <div class="export-card"><div class="icon">🔗</div><h3>Abrir no Google Sheets</h3>
+            <p>Acesse diretamente a planilha com todos os dados</p>
+            <a class="btn btn-primary" href="https://docs.google.com/spreadsheets/d/18xlIGh_ryP0ugtvBHTt9VGtJIOVX5qjye2FbkHl_HwY/edit" target="_blank">Abrir Planilha</a></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIGURAÇÃO — edite aqui
+// ══════════════════════════════════════════
+const ADMIN_SENHA = 'admin123';   // ← troque a senha do admin
+const ADMIN_MAT   = '4127';         // ← matrícula do admin
+const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbz2pT5USqmfvu5iX9UqvtJad9RVRB6fc5X7BMP103Qn24jEX8B9QQ0w7F2WcY-rjTg/exec';
+
+// ══════════════════════════════════════════
+//  DADOS PRÉ-CARREGADOS (extraídos do Manus)
+// ══════════════════════════════════════════
+const DADOS_INICIAIS = {
+  colaboradores: [
+    {matricula:"4127", nome:"Administrador"},
+    {matricula:"4958", nome:"Adriano Fernandes Júnior"},
+    {matricula:"3348", nome:"Alcindo Monteiro Junior"},
+    {matricula:"4564", nome:"Antonio Arlei Rogaciano"},
+    {matricula:"", nome:"Artur Luciano Ferreira"},
+    {matricula:"", nome:"Danilo Cesar de Oliveira"},
+    {matricula:"", nome:"Diogo Tiago Marcelino"},
+    {matricula:"", nome:"Leandro Lamin"},
+    {matricula:"", nome:"Wellington Sergio da Costa"}
+  ],
+  placas: ["ATH1E47","ATM6C36","ATM8632","ATM8G32","ATN3G10","ATO0H47","BBZ1D56","DBL4479",
+    "DBL4G36","DBL4G67","GVE4049","GVE4075","GVE4095","GVE4114","GVE4152","GVE4174",
+    "GVE4191","GVE4256","GVE4B51","HET7956","HMF8H58","HNB5525","HNY2520","KNU8D52",
+    "KZI6B91","KZI6B95","KZK8H23","KZK8H26","KZK8H46","KZK8H48","KZI6891","LAJ7447",
+    "LMN8A80","LTK8C32","OFICINA","OME0G01","OPE4B3","OPE5A04","OPE5A06","OPE5A11",
+    "OQZ3F84","OQZ3F87","ORA5518","ORA5520","ORE4B3","PUJ7313","PUN7C06","PWA4468",
+    "PYE1167","RMT5I17","RMU4F06","RMU4F15","RRM3D11","RRM3D41","RRM3D51","RRN5A32",
+    "SIY6J05","SIY6J08","SJA2D79","SJA5D00","SJI1E92","SJI1F42","SQD0E07","SYK3C08",
+    "SYL0J01","TEY9C73","TMA4G10","TRA0008","TXF9I21","TXG2F05","TXK9C12","TXP9G08",
+    "TXT6I36","TYH0G70","DBL4G77","HMF9H58","GVE4076"],
+  tipos: ["CORRETIVA","PREDITIVA","PREVENTIVA"],
+  eventos: ["CALIBRAR","COMPLETAR","COMPLETAR NÍVEL DE ÓLEO","CONSERTO","DESMONTAR",
+    "INSPECIONAR","INSTALAÇÃO","LAVAR","LIMPEZA","LUBRIFICAR","MONTAGEM","REALIZAR",
+    "REGULAR","REMOVER","REVISAR","SERVIÇOS","SOLDAR","TROCAR","VERIFICAR"],
+  subsistemas: ["ACOPLAMENTO","ARCO DE CAÇAMBA","BATERIA","BAU","BOMBA D'ÁGUA","BOMBA DE ALTA",
+    "BORRACHA DA TAMPA DA CAÇAMBA","BUCHA DE FREIO","CAIXA DE CÂMBIO","CAIXA DE DIREÇÃO",
+    "CAIXA DE ENGRENAGENS","CHICOTE ELÉTRICO","CIRCUITO HIDRÁULICO","COMPRESSOR DE AR",
+    "CRUZETAS E CARDAM","CUBO DE RODA","CUICA DE FREIO","DIFERENCIAL","ELÉTRICA GERAL",
+    "ESCADA CACAMBA","FAIXA REFLETIVA","FILTRO","FLEXIVEL DE FREIO","FREIOS","GERAL",
+    "LONA FACIL","MANGUEIRAS","PLANO DE MANUTENÇÃO/PREVENTIVA","RODAS","ROLAMENTO",
+    "VÁLVULAS","VAZAMENTO DE AR"],
+  apontamentos: [],
+  apontamentosBor: []
+};
+
+// ══════════════════════════════════════════
+//  BANCO LOCAL (localStorage)
+// ══════════════════════════════════════════
+let DB = JSON.parse(JSON.stringify(DADOS_INICIAIS));
+
+let currentUser = null;
+const charts = {};
+const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+
+// ══════════════════════════════════════════
+//  BORRACHARIA
+// ══════════════════════════════════════════
+let _borDados = [];
+
+function renderBorracharia() {
+  const mes = parseInt(document.getElementById('bor-filtro-mes').value)||0;
+  const ano = parseInt(document.getElementById('bor-filtro-ano').value)||0;
+  let dados = DB.apontamentosBor || [];
+  if(mes && ano) dados = dados.filter(a => matchMesAno(a.data, mes, ano));
+  _borDados = dados;
+
+  // Cards
+  document.getElementById('bor-stat-total').textContent  = dados.length;
+  document.getElementById('bor-stat-trocas').textContent = dados.filter(a=>a.servico==='Troca').length;
+  document.getElementById('bor-stat-calib').textContent  = dados.filter(a=>a.servico==='Calibragem').length;
+  document.getElementById('bor-stat-rod').textContent    = dados.filter(a=>a.servico==='Rodízio').length;
+
+  // Eixos
+  const eixoMap = {};
+  dados.forEach(a => {
+    const e = a.eixo||'—';
+    if(!eixoMap[e]) eixoMap[e] = {troca:0, calib:0, rod:0};
+    if(a.servico==='Troca')       eixoMap[e].troca++;
+    else if(a.servico==='Calibragem') eixoMap[e].calib++;
+    else if(a.servico==='Rodízio')    eixoMap[e].rod++;
+  });
+  const eixoList = Object.entries(eixoMap).sort((a,b)=>(b[1].troca+b[1].calib+b[1].rod)-(a[1].troca+a[1].calib+a[1].rod));
+  const eixoTbody = document.getElementById('bor-eixo-tbody');
+  if(!eixoList.length) {
+    eixoTbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Nenhum dado</td></tr>';
+  } else {
+    eixoTbody.innerHTML = eixoList.map(([eixo,v]) => {
+      const total = v.troca+v.calib+v.rod;
+      return `<tr>
+        <td><strong>${eixo}</strong></td>
+        <td style="text-align:center;color:var(--green)">${v.troca}</td>
+        <td style="text-align:center;color:#a78bfa">${v.calib}</td>
+        <td style="text-align:center;color:var(--accent2)">${v.rod}</td>
+        <td style="text-align:center;font-weight:700">${total}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Histórico completo
+  renderHistoricoBorTabela(dados);
+}
+
+function renderHistoricoBorTabela(dados) {
+  const tbody = document.getElementById('bor-historico-tbody');
+  if(!dados.length) {
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Nenhum serviço encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = dados.slice().reverse().map(a => `<tr>
+    <td>${a.data||''}</td>
+    <td><strong>${a.placa||''}</strong></td>
+    <td>${a.km||''}</td>
+    <td>${a.servico||''}</td>
+    <td>${a.eixo||''}</td>
+    <td>${a.posicao||''}</td>
+    <td>${a.pneu||'—'}</td>
+    <td>${a.colaborador||''}</td>
+  </tr>`).join('');
+}
+
+function filtrarHistoricoBorPlaca(q) {
+  const filtrado = q
+    ? _borDados.filter(a => (a.placa||'').toUpperCase().includes(q.toUpperCase()))
+    : _borDados;
+  renderHistoricoBorTabela(filtrado);
+}
+
+// ══════════════════════════════════════════
+//  ALERTAS
+// ══════════════════════════════════════════
+function renderAlertas() {
+  const dias = parseInt(document.getElementById('alerta-dias').value)||5;
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  const cont = document.getElementById('alertas-content');
+
+  // Última manutenção por placa
+  const ultimaManu = {};
+  DB.apontamentos.forEach(a => {
+    if(!a.placa || !a.data) return;
+    const partes = a.data.split('/');
+    if(partes.length!==3) return;
+    const d = new Date(parseInt(partes[2]), parseInt(partes[1])-1, parseInt(partes[0]));
+    if(!ultimaManu[a.placa] || d > ultimaManu[a.placa]) ultimaManu[a.placa] = d;
+  });
+
+  // Placas sem manutenção há mais de X dias
+  const alertas = DB.placas.map(placa => {
+    const ultima = ultimaManu[placa];
+    if(!ultima) return {placa, dias: null, label: 'Nunca teve manutenção'};
+    const diffMs  = hoje - ultima;
+    const diffDias = Math.floor(diffMs / 86400000);
+    return {placa, dias: diffDias, ultima, label: `${diffDias} dias atrás`};
+  }).filter(a => a.dias === null || a.dias >= dias)
+    .sort((a,b) => (b.dias||9999) - (a.dias||9999));
+
+  if(!alertas.length) {
+    cont.innerHTML=`<div style="text-align:center;padding:40px;color:var(--green)">
+      <div style="font-size:40px;margin-bottom:12px">✅</div>
+      <div style="font-size:16px;font-weight:600">Tudo em dia!</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">Nenhum veículo está há mais de ${dias} dias sem manutenção</div>
+    </div>`;
+    return;
+  }
+
+  cont.innerHTML = `
+    <div style="background:rgba(247,85,85,.08);border:1px solid rgba(247,85,85,.25);border-radius:12px;
+      padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">🚨</span>
+      <div>
+        <div style="font-weight:700;color:var(--red)">${alertas.length} veículo(s) sem manutenção há ${dias}+ dias</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">Verifique se esses veículos precisam de atenção</div>
+      </div>
+    </div>
+    <div class="table-wrap"><div style="overflow-x:auto"><table>
+      <thead><tr><th>Placa</th><th>Última Manutenção</th><th style="text-align:center">Dias sem manutenção</th><th style="text-align:center">Status</th></tr></thead>
+      <tbody>${alertas.map(a => {
+        const grave = a.dias === null || a.dias >= 30;
+        const medio = a.dias >= 15 && a.dias < 30;
+        const cor   = grave ? 'var(--red)' : medio ? 'var(--yellow)' : 'var(--accent2)';
+        const badge = grave
+          ? `<span class="badge" style="background:rgba(247,85,85,.15);color:var(--red);border:1px solid rgba(247,85,85,.3)">⛔ Crítico</span>`
+          : medio
+            ? `<span class="badge" style="background:rgba(247,212,79,.12);color:var(--yellow);border:1px solid rgba(247,212,79,.3)">⚠️ Atenção</span>`
+            : `<span class="badge" style="background:rgba(247,147,79,.12);color:var(--accent2);border:1px solid rgba(247,147,79,.3)">🔔 Alerta</span>`;
+        return `<tr>
+          <td><strong>${a.placa}</strong></td>
+          <td>${a.ultima ? a.ultima.toLocaleDateString('pt-BR') : '—'}</td>
+          <td style="text-align:center;font-weight:700;color:${cor}">${a.dias !== null ? a.dias+'d' : 'Nunca'}</td>
+          <td style="text-align:center">${badge}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+}
+
+window.onload = () => {
+  loadDB();
+  setDefaultDate();
+  populateAnoSelects();
+  setCurrentMonth();
+  // monitora conexão globalmente
+  window.addEventListener("offline", () => {
+    document.querySelectorAll("#offline-banner").forEach(b=>b.classList.remove("hidden"));
+  });
+  window.addEventListener("online", () => {
+    document.querySelectorAll("#offline-banner").forEach(b=>b.classList.add("hidden"));
+  });
+};
+
+function loadDB() {
+  try {
+    const s = localStorage.getItem('manuapp_db');
+    if(s) {
+      const saved = JSON.parse(s);
+      DB = {
+        colaboradores: saved.colaboradores?.length ? saved.colaboradores : DADOS_INICIAIS.colaboradores,
+        placas:        saved.placas?.length        ? saved.placas        : DADOS_INICIAIS.placas,
+        tipos:         saved.tipos?.length         ? saved.tipos         : DADOS_INICIAIS.tipos,
+        eventos:       saved.eventos?.length       ? saved.eventos       : DADOS_INICIAIS.eventos,
+        subsistemas:   saved.subsistemas?.length   ? saved.subsistemas   : DADOS_INICIAIS.subsistemas,
+        apontamentos:  saved.apontamentos          || []
+      };
+    }
+  } catch(e){ DB = JSON.parse(JSON.stringify(DADOS_INICIAIS)); }
+}
+
+function saveDB() {
+  localStorage.setItem('manuapp_db', JSON.stringify(DB));
+}
+
+function setDefaultDate() {
+  const el = document.getElementById('apo-data');
+  if(el) el.value = new Date().toISOString().split('T')[0];
+}
+
+function populateAnoSelects() {
+  const y = new Date().getFullYear();
+  ['filtro-ano','dash-ano','bor-filtro-ano'].forEach(id => {
+    const s = document.getElementById(id);
+    if(!s) return;
+    for(let i=y+1; i>=y-3; i--) {
+      const o = document.createElement('option');
+      o.value=i; o.textContent=i;
+      if(i===y) o.selected=true;
+      s.appendChild(o);
+    }
+  });
+}
+
+function setCurrentMonth() {
+  const m = new Date().getMonth()+1;
+  const fm = document.getElementById('filtro-mes');
+  const dm = document.getElementById('dash-mes');
+  if(fm) fm.value = m;
+  if(dm) dm.value = m;
+}
+
+// ══════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════
+function verificarMatricula() {
+  const mat = (document.getElementById('input-matricula').value||'').trim();
+  if(!mat) return showLoginError('Digite sua matrícula');
+  hideLoginError();
+
+  // É matrícula de admin?
+  if(String(mat) === String(ADMIN_MAT)) {
+    hide('login-step-mat');
+    show('login-step-senha');
+    setTimeout(() => document.getElementById('input-admin-pass').focus(), 100);
+    return;
+  }
+
+  // É mecânico?
+  const colab = DB.colaboradores.find(c => String(c.matricula) === String(mat));
+  if(!colab) return showLoginError('Matrícula não encontrada. Fale com o administrador.');
+  currentUser = {tipo:'mecanico', nome:colab.nome, matricula:mat, funcao:colab.funcao||''};
+  showMecanico();
+}
+
+function voltarLogin() {
+  hide('login-step-senha');
+  show('login-step-mat');
+  document.getElementById('input-admin-pass').value = '';
+  hideLoginError();
+  setTimeout(() => document.getElementById('input-matricula').focus(), 100);
+}
+
+function loginAdmin() {
+  const pass = document.getElementById('input-admin-pass').value;
+  if(pass !== ADMIN_SENHA) return showLoginError('Senha incorreta');
+  currentUser = {tipo:'admin', nome:'Administrador'};
+  showAdmin();
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideLoginError() {
+  document.getElementById('login-error').classList.add('hidden');
+}
+
+
+// ══════════════════════════════════════════
+//  OFFLINE & NOTIFICAÇÕES
+// ══════════════════════════════════════════
+function verificarOffline() {
+  const banner = document.getElementById('offline-banner');
+  if(!banner) return;
+  const atualizar = () => {
+    banner.classList.toggle('hidden', navigator.onLine);
+  };
+  atualizar();
+  window.addEventListener('online',  atualizar);
+  window.addEventListener('offline', atualizar);
+}
+
+function verificarApontamentoEsquecido(bannerId) {
+  const el = document.getElementById(bannerId);
+  if(!el || !currentUser) return;
+
+  // pega ontem
+  const ontem = new Date();
+  ontem.setDate(ontem.getDate() - 1);
+  // não avisa se ontem foi sábado(6) ou domingo(0)
+  const dow = ontem.getDay();
+  if(dow === 0 || dow === 6) { el.innerHTML=''; return; }
+
+  const d = ontem.getDate().toString().padStart(2,'0');
+  const m = (ontem.getMonth()+1).toString().padStart(2,'0');
+  const y = ontem.getFullYear();
+  const ontemBR = `${d}/${m}/${y}`;
+
+  const temOntem = DB.apontamentos.some(
+    a => a.colaborador === currentUser.nome && a.data === ontemBR
+  );
+
+  if(!temOntem) {
+    el.innerHTML = `<div style="background:rgba(247,212,79,.15);border:1px solid rgba(247,212,79,.4);
+      border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px">⚠️</span>
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--yellow)">Apontamento não registrado</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">
+          Você não fez nenhum apontamento em <strong>${ontemBR}</strong>. 
+          Lembre-se de registrar todos os dias trabalhados!
+        </div>
+      </div>
+    </div>`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function logout() {
+  if(!confirm('Tem certeza que deseja sair?')) return;
+  currentUser = null;
+  ['mecanico-screen','admin-screen','historico-screen','borracheiro-screen','historico-bor-screen'].forEach(hide);
+  show('login-screen');
+  document.getElementById('input-matricula').value = '';
+  document.getElementById('input-admin-pass').value = '';
+  show('login-step-mat');
+  hide('login-step-senha');
+  hideLoginError();
+}
+
+// ══════════════════════════════════════════
+//  MECÂNICO
+// ══════════════════════════════════════════
+function showMecanico() {
+  ['login-screen','admin-screen','historico-screen','borracheiro-screen','historico-bor-screen'].forEach(hide);
+  // Borracheiro tem tela própria
+  if(currentUser.funcao === 'Borracheiro') {
+    showBorracheiro(); return;
+  }
+  show('mecanico-screen');
+  document.getElementById('mecanico-nome-nav').textContent = currentUser.nome;
+  document.getElementById('mecanico-boas-vindas').textContent = 'Bem-vindo, ' + currentUser.nome;
+  setDefaultDate();
+  verificarOffline();
+  verificarApontamentoEsquecido('apontamento-esquecido-banner');
+}
+
+function showBorracheiro() {
+  ['login-screen','admin-screen','historico-screen','mecanico-screen','historico-bor-screen'].forEach(hide);
+  show('borracheiro-screen');
+  document.getElementById('borracheiro-nome-nav').textContent = currentUser.nome;
+  document.getElementById('borracheiro-boas-vindas').textContent = 'Bem-vindo, ' + currentUser.nome;
+  // seta data padrão
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('bor-data').value = today;
+  verificarOffline();
+  verificarApontamentoEsquecido('apontamento-esquecido-banner-bor');
+}
+
+function showHistoricoBorracheiro() {
+  hide('borracheiro-screen'); show('historico-bor-screen');
+  const meus = (DB.apontamentosBor||[])
+    .map((a,i)=>({...a,_idx:i}))
+    .filter(a=>a.colaborador===currentUser.nome)
+    .reverse();
+  const cont = document.getElementById('historico-bor-content');
+  if(!meus.length) {
+    cont.innerHTML='<p style="color:var(--text2);padding:20px">Nenhum serviço encontrado.</p>'; return;
+  }
+  cont.innerHTML=`<div class="table-wrap"><div style="overflow-x:auto"><table>
+    <thead><tr>
+      <th>Data</th><th>Placa</th><th>KM</th><th>Serviço</th>
+      <th>Eixo</th><th>Posição</th><th>Pneu</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th>
+    </tr></thead>
+    <tbody>${meus.map(a=>`<tr>
+      <td>${a.data||''}</td><td>${a.placa||''}</td><td>${a.km||''}</td>
+      <td>${a.servico||''}</td><td>${a.eixo||''}</td><td>${a.posicao||''}</td>
+      <td>${a.pneu||''}</td><td>${a.horaIni||''}</td><td>${a.horaFim||''}</td><td>${a.horas||''}</td>
+    </tr>`).join('')}</tbody>
+  </table></div></div>`;
+}
+
+async function registrarBorracheiro() {
+  const data    = document.getElementById('bor-data').value;
+  const placa   = document.getElementById('bor-placa-val').value;
+  const km      = document.getElementById('bor-km').value.trim();
+  const hIni    = document.getElementById('bor-hora-ini').value;
+  const hFim    = document.getElementById('bor-hora-fim').value;
+  const servico = document.getElementById('bor-servico').value;
+  const eixo    = document.getElementById('bor-eixo').value;
+  const posicao = document.getElementById('bor-posicao').value;
+  const pneu    = document.getElementById('bor-pneu').value.trim().toUpperCase();
+  const obs     = document.getElementById('bor-obs').value.trim();
+
+  if(!data)    return showMsg('bor-msg','Informe a data.','error');
+  if(!placa)   return showMsg('bor-msg','Selecione a placa da lista.','error');
+  if(!km)      return showMsg('bor-msg','Informe o KM do veículo.','error');
+  if(!hIni)    return showMsg('bor-msg','Informe a hora inicial.','error');
+  if(!hFim)    return showMsg('bor-msg','Informe a hora final.','error');
+  if(!servico) return showMsg('bor-msg','Selecione o tipo de serviço.','error');
+  if(!eixo)    return showMsg('bor-msg','Selecione o eixo.','error');
+  if(!posicao) return showMsg('bor-msg','Selecione a posição.','error');
+
+  const horas = calcHoras(hIni, hFim);
+  const row = {
+    data: toBR(data), colaborador: currentUser.nome, placa, km,
+    horaIni: hIni+':00', horaFim: hFim+':00', servico, eixo, posicao,
+    pneu, obs, horas, sincronizado: false
+  };
+
+  const btn = document.getElementById('btn-registrar-bor');
+  btn.disabled=true; btn.textContent='Registrando...';
+
+  if(!DB.apontamentosBor) DB.apontamentosBor = [];
+  DB.apontamentosBor.push(row);
+  saveDB();
+  toast('Serviço registrado!','success');
+  showMsg('bor-msg','Serviço registrado com sucesso! ✅','success');
+
+  // limpa
+  ['bor-km','bor-pneu','bor-obs'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('bor-servico').value='';
+  document.getElementById('bor-eixo').value='';
+  document.getElementById('bor-posicao').value='';
+  acClear('placa'); // limpa autocomplete placa
+  document.getElementById('bor-placa-search').id = 'bor-placa-search'; // força reset
+  document.getElementById('bor-placa-val').value='';
+  document.getElementById('bor-placa-tag').innerHTML='';
+  document.getElementById('bor-placa-search').value='';
+  document.getElementById('bor-placa-search').disabled=false;
+  document.getElementById('bor-placa-search').classList.remove('ac-selected');
+  document.getElementById('bor-placa-search').placeholder='🔍 Buscar placa...';
+  btn.disabled=false; btn.textContent='Registrar Serviço';
+}
+
+async function registrarApontamento() {
+  const data   = document.getElementById('apo-data').value;
+  const tipo   = document.getElementById('apo-tipo-val').value;
+  const placa  = document.getElementById('apo-placa-val').value;
+  const hIni   = document.getElementById('apo-hora-ini').value;
+  const hFim   = document.getElementById('apo-hora-fim').value;
+  const evento = document.getElementById('apo-evento-val').value;
+  const sub    = document.getElementById('apo-subsistema-val').value;
+  const ordem  = document.getElementById('apo-ordem').value.trim();
+  const obs    = document.getElementById('apo-obs').value.trim();
+
+  if(!data)   return showMsg('apo-msg','Informe a data.','error');
+  if(!tipo)   return showMsg('apo-msg','Selecione o tipo de manutenção da lista.','error');
+  if(!placa)  return showMsg('apo-msg','Selecione a placa da lista.','error');
+  if(!hIni)   return showMsg('apo-msg','Informe a hora inicial.','error');
+  if(!hFim)   return showMsg('apo-msg','Informe a hora final.','error');
+  if(!evento) return showMsg('apo-msg','Selecione o evento da lista.','error');
+  if(!sub)    return showMsg('apo-msg','Selecione o subsistema da lista.','error');
+
+  // ── Detecta virada de meia-noite ──
+  const novoIni = toMinutes(hIni);
+  const novoFim = toMinutes(hFim);
+  const virouMeiaNOite = novoFim < novoIni; // fim menor que início = virou o dia
+
+  // Calcula data do fim (pode ser dia seguinte)
+  let dataBR   = toBR(data);
+  let dataFimBR = dataBR;
+  if(virouMeiaNOite) {
+    // avança um dia
+    const partes = data.split('-');
+    const dataObj = new Date(parseInt(partes[0]), parseInt(partes[1])-1, parseInt(partes[2]));
+    dataObj.setDate(dataObj.getDate() + 1);
+    const d = dataObj.getDate().toString().padStart(2,'0');
+    const m = (dataObj.getMonth()+1).toString().padStart(2,'0');
+    const y = dataObj.getFullYear();
+    dataFimBR = `${d}/${m}/${y}`;
+  }
+
+  // ── Validação de sobreposição de horário ──
+  const conflito = DB.apontamentos.find(a => {
+    if(a.colaborador !== currentUser.nome) return false;
+    if(a.data !== dataBR) return false;
+    const aIni = toMinutes(a.horaIni);
+    const aFim = toMinutes(a.horaFim) || 1440;
+    const nFim = virouMeiaNOite ? 1440 : (novoFim || 1440);
+    return novoIni < aFim && nFim > aIni;
+  });
+
+  if(conflito) {
+    return showMsg('apo-msg',
+      `Conflito de horário! Você já tem um apontamento das ${conflito.horaIni} às ${conflito.horaFim} neste dia.`,
+      'error');
+  }
+
+  const horas = calcHoras(hIni, hFim);
+  const row = { data:dataBR, dataFim:dataFimBR, colaborador:currentUser.nome, tipo, placa,
+    horaIni:hIni+':00', horaFim:hFim+':00', evento, subsistema:sub,
+    ordem, tarefas:obs, horas, virouMeiaNOite, sincronizado:false };
+
+  const btn = document.getElementById('btn-registrar');
+  btn.disabled=true; btn.textContent='Registrando...';
+
+  DB.apontamentos.push(row);
+  saveDB();
+
+  const ok = await enviarParaSheets(row);
+  if(ok) { row.sincronizado=true; saveDB(); toast('Registrado e sincronizado!','success'); }
+  else toast('Salvo localmente. Sincronize depois na área admin.','');
+
+  // limpa
+  ['apo-hora-ini','apo-hora-fim'].forEach(id => {
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['tipo','placa','evento','subsistema'].forEach(f => acClear(f));
+  document.getElementById('apo-obs').value='';
+  setDefaultDate();
+  showMsg('apo-msg', virouMeiaNOite
+    ? `Apontamento registrado! ✅ Virada de meia-noite detectada — término registrado em ${dataFimBR}`
+    : 'Apontamento registrado com sucesso! ✅','success');
+  btn.disabled=false; btn.textContent='Registrar Apontamento';
+  updateStats();
+}
+
+function showHistorico() {
+  hide('mecanico-screen'); show('historico-screen');
+  renderHistorico();
+}
+
+function renderHistorico() {
+  const agora = new Date();
+  const mes = agora.getMonth()+1;
+  const ano = agora.getFullYear();
+
+  const meus = DB.apontamentos
+    .map((a,i) => ({...a, _idx:i}))
+    .filter(a => a.colaborador===currentUser.nome)
+    .reverse();
+
+  const meusMes = meus.filter(a => matchMesAno(a.data, mes, ano));
+  const totalHorasMes = meusMes.reduce((s,a)=>s+(parseFloat(a.horas)||0),0);
+
+  const colab = DB.colaboradores.find(c=>c.nome===currentUser.nome);
+  const esperado = horasEsperadasComFerias(colab, mes, ano);
+  const extra = esperado ? Math.max(0, totalHorasMes - esperado) : 0;
+  const falta = esperado ? Math.max(0, esperado - totalHorasMes) : 0;
+  const isExtra = esperado && totalHorasMes > esperado;
+
+  // Banner de status de horas
+  let banner = '';
+  if(esperado) {
+    const pct = Math.min(100,(totalHorasMes/esperado)*100).toFixed(0);
+    banner = `<div style="background:${isExtra?'rgba(247,85,85,.12)':'rgba(79,142,247,.1)'};
+      border:1px solid ${isExtra?'rgba(247,85,85,.4)':'rgba(79,142,247,.3)'};
+      border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-size:28px">${isExtra?'🔴':'🔵'}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">
+          ${isExtra
+            ? `⚠️ Hora extra: <span style="color:var(--red)">${totalHorasMes.toFixed(1)}h feitas</span> de ${esperado}h esperadas (+${extra.toFixed(1)}h)`
+            : `${totalHorasMes.toFixed(1)}h feitas de ${esperado}h esperadas — faltam ${falta.toFixed(1)}h`}
+        </div>
+        <div style="width:100%;height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px">
+          <div style="width:${pct}%;height:100%;background:${isExtra?'var(--red)':'var(--accent)'};border-radius:4px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">${MESES[mes]} ${ano} · Turno: ${TURNOS[colab.turno]?.label||'—'}</div>
+      </div>
+      <div style="font-family:var(--font-head);font-size:24px;font-weight:800;color:${isExtra?'var(--red)':'var(--accent)'}">
+        ${pct}%
+      </div>
+    </div>`;
+  }
+
+  const cont = document.getElementById('historico-content');
+  if(!meus.length) {
+    cont.innerHTML = banner + '<p style="color:var(--text2);padding:20px">Nenhum apontamento encontrado.</p>'; return;
+  }
+  cont.innerHTML = banner + `
+    <div class="table-wrap"><div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>Data</th><th>Tipo</th><th>Placa</th><th>Evento</th>
+        <th>Subsistema</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th><th>Editar</th>
+      </tr></thead>
+      <tbody>${meus.map(a=>`<tr>
+        <td>${a.data||''}${a.virouMeiaNOite?` <span title="Terminou no dia seguinte (${a.dataFim||''})" style="font-size:10px;color:var(--accent2);cursor:help">🌙+1</span>`:''}</td>
+        <td>${a.tipo||''}</td><td>${a.placa||''}</td>
+        <td>${a.evento||''}</td><td>${a.subsistema||''}</td>
+        <td>${a.horaIni||''}</td><td>${a.horaFim||''}${a.virouMeiaNOite?` <span style="font-size:10px;color:var(--accent2)">→${a.dataFim||''}</span>`:''}</td>
+        <td>${a.horas||''}</td>
+        <td><button class="btn-icon" onclick="abrirEdicao(${a._idx})" title="Editar">✏️</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>
+
+    <!-- Modal de edição -->
+    <div id="modal-edicao" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.6);
+      display:flex;align-items:center;justify-content:center;z-index:500">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
+        padding:28px;width:100%;max-width:480px;box-shadow:var(--shadow);margin:16px">
+        <div style="font-family:var(--font-head);font-size:18px;font-weight:700;margin-bottom:4px">Editar Apontamento</div>
+        <div style="color:var(--text2);font-size:12px;margin-bottom:20px">Altere os campos necessários</div>
+        <input type="hidden" id="edit-idx" />
+        <div class="form-group"><label>Data *</label><input type="date" id="edit-data" /></div>
+        <div class="form-group"><label>Tipo de Manutenção *</label>
+          <select id="edit-tipo"></select>
+        </div>
+        <div class="form-group"><label>Placa *</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="edit-placa-search" placeholder="🔍 Buscar placa..." autocomplete="off"
+              oninput="acSearch(this,'placas','edit-placa-list','edit-placa-val')"
+              onfocus="acSearch(this,'placas','edit-placa-list','edit-placa-val')" />
+            <input type="hidden" id="edit-placa-val" />
+            <div class="autocomplete-list hidden" id="edit-placa-list"></div>
+          </div>
+          <div id="edit-placa-tag"></div>
+        </div>
+        <div class="input-row">
+          <div class="form-group"><label>Hora Inicial *</label><input type="time" id="edit-hora-ini" /></div>
+          <div class="form-group"><label>Hora Final *</label><input type="time" id="edit-hora-fim" /></div>
+        </div>
+        <div class="form-group"><label>Evento *</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="edit-evento-search" placeholder="🔍 Buscar evento..." autocomplete="off"
+              oninput="acSearch(this,'eventos','edit-evento-list','edit-evento-val')"
+              onfocus="acSearch(this,'eventos','edit-evento-list','edit-evento-val')" />
+            <input type="hidden" id="edit-evento-val" />
+            <div class="autocomplete-list hidden" id="edit-evento-list"></div>
+          </div>
+          <div id="edit-evento-tag"></div>
+        </div>
+        <div class="form-group"><label>Subsistema *</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="edit-subsistema-search" placeholder="🔍 Buscar subsistema..." autocomplete="off"
+              oninput="acSearch(this,'subsistemas','edit-subsistema-list','edit-subsistema-val')"
+              onfocus="acSearch(this,'subsistemas','edit-subsistema-list','edit-subsistema-val')" />
+            <input type="hidden" id="edit-subsistema-val" />
+            <div class="autocomplete-list hidden" id="edit-subsistema-list"></div>
+          </div>
+          <div id="edit-subsistema-tag"></div>
+        </div>
+        <div id="edit-msg" style="margin-bottom:12px"></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" style="flex:1" onclick="fecharEdicao()">Cancelar</button>
+          <button class="btn btn-primary" style="flex:2" onclick="salvarEdicao()">💾 Salvar alterações</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function abrirEdicao(idx) {
+  const a = DB.apontamentos[idx];
+  if(!a) return;
+
+  document.getElementById('edit-idx').value = idx;
+
+  // data: converte dd/mm/yyyy → yyyy-mm-dd
+  const partes = (a.data||'').split('/');
+  document.getElementById('edit-data').value =
+    partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : '';
+
+  // tipo
+  const sel = document.getElementById('edit-tipo');
+  sel.innerHTML = '';
+  DB.tipos.forEach(t => sel.add(new Option(t,t)));
+  sel.value = a.tipo||'';
+
+  // horas
+  document.getElementById('edit-hora-ini').value = (a.horaIni||'').slice(0,5);
+  document.getElementById('edit-hora-fim').value = (a.horaFim||'').slice(0,5);
+
+  // placa, evento, subsistema — mostra valor atual como tag
+  ['placa','evento','subsistema'].forEach(f => {
+    acClearEdit(f);
+    const val = f==='placa' ? a.placa : f==='evento' ? a.evento : a.subsistema;
+    if(val) acShowTagEdit(f, val);
+  });
+
+  // mostra modal
+  document.getElementById('modal-edicao').classList.remove('hidden');
+  document.getElementById('modal-edicao').style.display = 'flex';
+}
+
+function fecharEdicao() {
+  const m = document.getElementById('modal-edicao');
+  if(m) { m.classList.add('hidden'); m.style.display='none'; }
+}
+
+function salvarEdicao() {
+  const idx    = parseInt(document.getElementById('edit-idx').value);
+  const data   = document.getElementById('edit-data').value;
+  const tipo   = document.getElementById('edit-tipo').value;
+  const placa  = document.getElementById('edit-placa-val').value;
+  const hIni   = document.getElementById('edit-hora-ini').value;
+  const hFim   = document.getElementById('edit-hora-fim').value;
+  const evento = document.getElementById('edit-evento-val').value;
+  const sub    = document.getElementById('edit-subsistema-val').value;
+
+  if(!data||!tipo||!placa||!hIni||!hFim||!evento||!sub)
+    return showMsg('edit-msg','Preencha todos os campos.','error');
+
+  const dataBR = toBR(data);
+  const novoIni = toMinutes(hIni);
+  const novoFim = toMinutes(hFim) || 1440;
+
+  // verifica sobreposição ignorando o próprio registro
+  const conflito = DB.apontamentos.find((a,i) => {
+    if(i === idx) return false;
+    if(a.colaborador !== currentUser.nome) return false;
+    if(a.data !== dataBR) return false;
+    const aIni = toMinutes(a.horaIni);
+    const aFim = toMinutes(a.horaFim) || 1440;
+    return novoIni < aFim && novoFim > aIni;
+  });
+
+  if(conflito)
+    return showMsg('edit-msg',
+      `Conflito: já existe apontamento das ${conflito.horaIni} às ${conflito.horaFim} neste dia.`,
+      'error');
+
+  // salva
+  DB.apontamentos[idx] = {
+    ...DB.apontamentos[idx],
+    data: dataBR, tipo, placa,
+    horaIni: hIni+':00', horaFim: hFim+':00',
+    evento, subsistema: sub,
+    horas: calcHoras(hIni, hFim),
+    sincronizado: false
+  };
+  saveDB();
+  fecharEdicao();
+  renderHistorico();
+  toast('Apontamento atualizado!','success');
+}
+
+// versões do acShowTag/acClear para o modal de edição
+function acShowTagEdit(field, value) {
+  const prefix = 'edit-';
+  const tagEl    = document.getElementById(prefix+field+'-tag');
+  const searchEl = document.getElementById(prefix+field+'-search');
+  const valEl    = document.getElementById(prefix+field+'-val');
+  if(valEl) valEl.value = value;
+  if(tagEl) tagEl.innerHTML = `<span class="ac-selected-tag">✔ ${value}
+    <button onclick="acClearEdit('${field}')" title="Remover">×</button></span>`;
+  if(searchEl) {
+    searchEl.classList.add('ac-selected');
+    searchEl.placeholder = 'Selecionado ✔';
+    searchEl.disabled = true;
+  }
+}
+
+function acClearEdit(field) {
+  const prefix = 'edit-';
+  const labels = {placa:'Buscar placa...', evento:'Buscar evento...', subsistema:'Buscar subsistema...'};
+  ['val','tag'].forEach(s => {
+    const el = document.getElementById(prefix+field+'-'+s);
+    if(el) { if(s==='tag') el.innerHTML=''; else el.value=''; }
+  });
+  const searchEl = document.getElementById(prefix+field+'-search');
+  if(searchEl) {
+    searchEl.value=''; searchEl.disabled=false;
+    searchEl.classList.remove('ac-selected');
+    searchEl.placeholder='🔍 '+(labels[field]||'Buscar...');
+  }
+  const dropEl = document.getElementById(prefix+field+'-list');
+  if(dropEl) dropEl.classList.add('hidden');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════
+function showAdmin() {
+  ['login-screen','mecanico-screen','historico-screen'].forEach(hide);
+  show('admin-screen');
+  updateStats();
+  showAdminTab('apontamentos');
+}
+
+function showAdminTab(name) {
+  document.querySelectorAll('.atab').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('atab-'+name).classList.remove('hidden');
+  const btn = document.getElementById('tbtn-'+name);
+  if(btn) btn.classList.add('active');
+  if(name==='apontamentos') filtrarApontamentos();
+  if(name==='placas') renderManage('placas','placas-grid');
+  if(name==='colaboradores') renderColaboradores();
+  if(name==='tipos') renderManage('tipos','tipos-grid');
+  if(name==='eventos') renderManage('eventos','eventos-grid');
+  if(name==='subsistemas') renderManage('subsistemas','subsistemas-grid');
+  if(name==='dashboard') renderDashboard();
+  if(name==='borracharia') renderBorracharia();
+  if(name==='alertas') renderAlertas();
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent  = DB.apontamentos.length;
+  document.getElementById('stat-colab').textContent  = DB.colaboradores.length;
+  document.getElementById('stat-placas').textContent = DB.placas.length;
+  document.getElementById('stat-sync').textContent   = DB.apontamentos.filter(a=>!a.sincronizado).length;
+}
+
+function filtrarApontamentos() {
+  const mes = parseInt(document.getElementById('filtro-mes').value);
+  const ano = parseInt(document.getElementById('filtro-ano').value);
+  const filtrados = DB.apontamentos.filter(a => matchMesAno(a.data, mes, ano));
+  document.getElementById('apo-table-title').textContent = 'Apontamentos';
+  document.getElementById('apo-table-sub').textContent =
+    `Apontamentos de ${MESES[mes]} de ${ano} — ${filtrados.length} registro(s)`;
+  const tbody = document.getElementById('apo-tbody');
+  if(!filtrados.length) {
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:32px">Nenhum apontamento encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtrados.map(a => {
+    const idx = DB.apontamentos.indexOf(a);
+    const badge = a.tipo==='CORRETIVA'?'badge-yellow':a.tipo==='PREVENTIVA'?'badge-blue':'badge-green';
+    return `<tr>
+      <td>${a.data||''}</td><td>${a.colaborador||''}</td>
+      <td><span class="badge ${badge}">${a.tipo||''}</span></td>
+      <td>${a.placa||''}</td><td>${a.evento||''}</td><td>${a.subsistema||''}</td>
+      <td>${a.horaIni||''}</td><td>${a.horaFim||''}</td><td>${a.horas||''}</td>
+      <td><button class="btn-icon" onclick="deletarApontamento(${idx})" title="Excluir">🗑️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function deletarApontamento(idx) {
+  if(!confirm('Excluir este apontamento?')) return;
+  DB.apontamentos.splice(idx,1);
+  saveDB(); updateStats(); filtrarApontamentos();
+  toast('Apontamento excluído','success');
+}
+
+// ── listas gerenciáveis ──
+function renderManage(list, gridId) {
+  const grid = document.getElementById(gridId);
+  if(!grid) return;
+  grid.innerHTML = DB[list].map((item,i) =>
+    `<div class="manage-item"><span>${item}</span>
+     <button class="btn-icon" onclick="removerItem('${list}',${i},'${gridId}')">🗑️</button></div>`
+  ).join('');
+}
+
+function adicionarItem(list, inputId, gridId) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim().toUpperCase();
+  if(!val) return;
+  if(DB[list].includes(val)) { toast('Item já existe','error'); return; }
+  DB[list].push(val); DB[list].sort();
+  saveDB(); renderManage(list,gridId); inp.value='';
+  toast('Adicionado!','success');
+}
+
+function importarLista(list, textareaId, resultId) {
+  const raw = document.getElementById(textareaId).value;
+  if(!raw.trim()) { toast('Cole algum conteúdo antes de importar','error'); return; }
+
+  // Pega cada linha, pega só a primeira coluna (tab ou vírgula), limpa e converte para maiúsculo
+  const linhas = raw.split('\n');
+  const candidatos = linhas
+    .map(l => l.split(/\t|;|,/)[0].trim().toUpperCase())
+    .filter(v => v.length > 0);
+
+  let adicionados = 0;
+  let duplicados  = 0;
+
+  candidatos.forEach(val => {
+    if(DB[list].includes(val)) { duplicados++; return; }
+    DB[list].push(val);
+    adicionados++;
+  });
+
+  DB[list].sort();
+  saveDB();
+
+  // Atualiza grid correto
+  const gridMap = {placas:'placas-grid', eventos:'eventos-grid', subsistemas:'subsistemas-grid'};
+  if(gridMap[list]) renderManage(list, gridMap[list]);
+
+  // Mostra resultado
+  const res = document.getElementById(resultId);
+  if(res) {
+    res.innerHTML = adicionados > 0
+      ? `<span style="color:var(--green)">✅ ${adicionados} adicionado(s)</span>`
+        + (duplicados > 0 ? ` <span style="color:var(--text2)">· ${duplicados} duplicado(s) ignorado(s)</span>` : '')
+      : `<span style="color:var(--text2)">Nenhum novo item — ${duplicados} já existiam</span>`;
+  }
+
+  // Limpa textarea
+  document.getElementById(textareaId).value = '';
+}
+
+function removerItem(list, idx, gridId) {
+  if(!confirm('Remover este item?')) return;
+  DB[list].splice(idx,1);
+  saveDB(); renderManage(list,gridId);
+  toast('Removido','success');
+}
+
+function filtrarManage(input, gridId) {
+  const q = input.value.toLowerCase();
+  document.querySelectorAll('#'+gridId+' .manage-item').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+// ── colaboradores ──
+const TURNOS = {
+  comercial: { label:'🌅 Comercial (07-17)', hDia:10, tipo:'uteis' },
+  tarde:     { label:'🌙 Tarde/Noite (14-00)', hDia:10, tipo:'uteis' },
+  '12x36':   { label:'🔄 12x36 (07-19)', hDia:12, tipo:'alternados' }
+};
+
+function horasEsperadas(turno, mes, ano) {
+  if(!turno || !TURNOS[turno] || !mes || !ano) return null;
+  const t = TURNOS[turno];
+  const diasNoMes = new Date(ano, mes, 0).getDate();
+
+  if(t.tipo === 'alternados') {
+    // 12x36: metade dos dias do mês
+    return Math.floor(diasNoMes / 2) * t.hDia;
+  } else {
+    // úteis: conta seg-sex
+    let uteis = 0;
+    for(let d=1; d<=diasNoMes; d++) {
+      const dow = new Date(ano, mes-1, d).getDay();
+      if(dow >= 1 && dow <= 5) uteis++;
+    }
+    return uteis * t.hDia;
+  }
+}
+
+const FUNCOES = ['Auxiliar de Mecânico','Borracheiro','Eletricista','Lavador','Mecânico','Mecânico 1','Mecânico 2','Mecânico 3'];
+
+function estaDeFerias(colab, mes, ano) {
+  if(!colab.ferias || !colab.ferias.length) return false;
+  return colab.ferias.some(f => {
+    const ini = new Date(f.ini + 'T00:00:00');
+    const fim = new Date(f.fim + 'T23:59:59');
+    // verifica se algum dia do mês/ano cai dentro das férias
+    const inicioMes = new Date(ano, mes-1, 1);
+    const fimMes    = new Date(ano, mes, 0, 23, 59, 59);
+    return ini <= fimMes && fim >= inicioMes;
+  });
+}
+
+function diasFeriasNoMes(colab, mes, ano) {
+  if(!colab.ferias || !colab.ferias.length) return 0;
+  let total = 0;
+  colab.ferias.forEach(f => {
+    const ini = new Date(f.ini + 'T00:00:00');
+    const fim = new Date(f.fim + 'T23:59:59');
+    const inicioMes = new Date(ano, mes-1, 1);
+    const fimMes    = new Date(ano, mes, 0);
+    const start = ini < inicioMes ? inicioMes : ini;
+    const end   = fim > fimMes    ? fimMes    : fim;
+    if(start <= end) {
+      total += Math.round((end - start) / 86400000) + 1;
+    }
+  });
+  return total;
+}
+
+function horasEsperadasComFerias(colab, mes, ano) {
+  const base = horasEsperadas(colab?.turno, mes, ano);
+  if(!base) return null;
+  const diasFer = diasFeriasNoMes(colab, mes, ano);
+  if(!diasFer) return base;
+  const t = TURNOS[colab.turno];
+  return Math.max(0, base - (diasFer * t.hDia));
+}
+
+function renderColaboradores() {
+  document.getElementById('colab-list').innerHTML =
+    DB.colaboradores.map((c,i) => {
+      const turnoLabel  = c.turno && TURNOS[c.turno] ? TURNOS[c.turno].label : '—';
+      const funcaoLabel = c.funcao || '—';
+      const feriasList  = (c.ferias||[]).map((f,fi) =>
+        `<span class="ferias-tag">🏖️ ${f.ini} → ${f.fim}
+          <button onclick="removerFerias(${i},${fi})" title="Remover">×</button>
+        </span>`).join('');
+
+      return `<div class="colab-item" style="flex-direction:column;align-items:stretch;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div class="colab-info">
+            <strong>${c.nome}</strong>
+            <small>Mat: ${c.matricula} · ${funcaoLabel} · ${turnoLabel}</small>
+          </div>
+          <button class="btn-icon" onclick="removerColaborador(${i})">🗑️</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select onchange="alterarFuncao(${i},this.value)" style="font-size:12px;padding:4px 8px">
+            <option value="">Sem função</option>
+            ${FUNCOES.map(f=>`<option value="${f}" ${c.funcao===f?'selected':''}>${f}</option>`).join('')}
+          </select>
+          <select onchange="alterarTurno(${i},this.value)" style="font-size:12px;padding:4px 8px">
+            <option value="">Sem turno</option>
+            <option value="comercial" ${c.turno==='comercial'?'selected':''}>🌅 Comercial</option>
+            <option value="tarde"     ${c.turno==='tarde'?'selected':''}>🌙 Tarde/Noite</option>
+            <option value="12x36"     ${c.turno==='12x36'?'selected':''}>🔄 12x36</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:12px;color:var(--text2)">🏖️ Férias:</span>
+          <input type="date" id="fer-ini-${i}" style="font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" />
+          <span style="font-size:12px;color:var(--text2)">até</span>
+          <input type="date" id="fer-fim-${i}" style="font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" />
+          <button class="btn btn-sm" style="font-size:12px;padding:4px 12px" onclick="adicionarFerias(${i})">+ Adicionar</button>
+        </div>
+        ${feriasList ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${feriasList}</div>` : ''}
+      </div>`;
+    }).join('');
+}
+
+function alterarFuncao(idx, funcao) {
+  DB.colaboradores[idx].funcao = funcao;
+  saveDB(); renderColaboradores();
+  toast('Função atualizada!','success');
+}
+
+function alterarTurno(idx, turno) {
+  DB.colaboradores[idx].turno = turno;
+  saveDB(); renderColaboradores();
+  toast('Turno atualizado!','success');
+}
+
+function adicionarFerias(idx) {
+  const ini = document.getElementById(`fer-ini-${idx}`).value;
+  const fim = document.getElementById(`fer-fim-${idx}`).value;
+  if(!ini||!fim) { toast('Informe data de início e fim das férias','error'); return; }
+  if(ini > fim)  { toast('Data de início deve ser antes do fim','error'); return; }
+  if(!DB.colaboradores[idx].ferias) DB.colaboradores[idx].ferias = [];
+  DB.colaboradores[idx].ferias.push({ini, fim});
+  saveDB(); renderColaboradores();
+  toast('Férias registradas!','success');
+}
+
+function removerFerias(colabIdx, feriasIdx) {
+  DB.colaboradores[colabIdx].ferias.splice(feriasIdx, 1);
+  saveDB(); renderColaboradores();
+  toast('Férias removidas','success');
+}
+
+function adicionarColaborador() {
+  const mat    = document.getElementById('nova-matricula').value.trim();
+  const nome   = document.getElementById('novo-nome').value.trim();
+  const turno  = document.getElementById('novo-turno').value;
+  const funcao = document.getElementById('nova-funcao').value;
+  if(!mat||!nome) { toast('Preencha matrícula e nome','error'); return; }
+  if(DB.colaboradores.find(c=>String(c.matricula)===String(mat))) { toast('Matrícula já cadastrada','error'); return; }
+  DB.colaboradores.push({matricula:mat, nome, turno, funcao, ferias:[]});
+  saveDB(); renderColaboradores(); updateStats();
+  document.getElementById('nova-matricula').value='';
+  document.getElementById('novo-nome').value='';
+  document.getElementById('novo-turno').value='';
+  document.getElementById('nova-funcao').value='';
+  toast('Colaborador adicionado!','success');
+}
+
+function removerColaborador(idx) {
+  if(!confirm('Remover este colaborador?')) return;
+  DB.colaboradores.splice(idx,1);
+  saveDB(); renderColaboradores(); updateStats();
+}
+
+// ── dashboard ──
+function renderDashboard() {
+  const mes = parseInt(document.getElementById('dash-mes').value)||0;
+  const ano = parseInt(document.getElementById('dash-ano').value)||0;
+  let dados = DB.apontamentos;
+  if(mes && ano) dados = dados.filter(a => matchMesAno(a.data, mes, ano));
+
+  // ── Cards de resumo ──
+  const totalHoras = dados.reduce((s,a) => s+(parseFloat(a.horas)||0), 0);
+  const totalApo   = dados.length;
+  const media      = totalApo ? (totalHoras/totalApo) : 0;
+  const mecanicos  = new Set(dados.map(a=>a.colaborador)).size;
+
+  document.getElementById('dash-total-horas').textContent = totalHoras.toFixed(1);
+  document.getElementById('dash-total-apo').textContent   = totalApo;
+  document.getElementById('dash-media-horas').textContent = media.toFixed(2);
+  document.getElementById('dash-mecanicos').textContent   = mecanicos;
+
+  // ── Tabela horas por funcionário ──
+  const funcMap = {};
+  dados.forEach(a => {
+    const k = a.colaborador||'—';
+    if(!funcMap[k]) funcMap[k] = {apo:0, horas:0};
+    funcMap[k].apo++;
+    funcMap[k].horas += parseFloat(a.horas)||0;
+  });
+  const funcList = Object.entries(funcMap).sort((a,b)=>b[1].horas-a[1].horas);
+  const tbody = document.getElementById('dash-func-tbody');
+  if(!funcList.length) {
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Nenhum dado no período</td></tr>';
+  } else {
+    tbody.innerHTML = funcList.map(([nome,v]) => {
+      const pct      = totalHoras ? ((v.horas/totalHoras)*100).toFixed(1) : 0;
+      const colab    = DB.colaboradores.find(c=>c.nome===nome);
+      const deFerias = mes && ano ? estaDeFerias(colab, mes, ano) : false;
+      const esperado = mes && ano ? horasEsperadasComFerias(colab, mes, ano) : horasEsperadas(colab?.turno, mes, ano);
+      const extra    = esperado ? Math.max(0, v.horas - esperado) : 0;
+      const falta    = esperado ? Math.max(0, esperado - v.horas) : 0;
+      const pctCarga = esperado ? Math.min(100,(v.horas/esperado)*100).toFixed(0) : null;
+      const isExtra  = esperado && v.horas > esperado;
+      const turnoLabel  = colab?.turno && TURNOS[colab.turno] ? TURNOS[colab.turno].label : '—';
+      const funcaoLabel = colab?.funcao || '—';
+      const diasFer  = mes && ano && colab ? diasFeriasNoMes(colab, mes, ano) : 0;
+
+      return `<tr style="${isExtra?'background:rgba(247,85,85,.05)':deFerias?'background:rgba(247,212,79,.04)':''}">
+        <td>
+          <strong>${nome}</strong>
+          <div style="font-size:11px;color:var(--text2)">${funcaoLabel} · ${turnoLabel}</div>
+          ${deFerias ? `<div style="font-size:11px;color:var(--yellow);margin-top:2px">🏖️ ${diasFer}d de férias no período</div>` : ''}
+        </td>
+        <td style="text-align:center">${v.apo}</td>
+        <td style="text-align:right;font-weight:600;color:${isExtra?'var(--red)':'var(--accent)'}">${v.horas.toFixed(2)}h</td>
+        <td style="text-align:right;color:var(--text2)">${esperado ? esperado+'h' : '—'}</td>
+        <td style="text-align:center">
+          ${deFerias && !isExtra
+            ? `<span class="badge" style="background:rgba(247,212,79,.12);color:var(--yellow);border:1px solid rgba(247,212,79,.3)">🏖️ Férias</span>`
+            : isExtra
+              ? `<span class="badge badge-red" style="background:rgba(247,85,85,.15);color:var(--red);border:1px solid rgba(247,85,85,.3)">+${extra.toFixed(1)}h extra</span>`
+              : esperado && falta > 0
+                ? `<span class="badge" style="background:rgba(247,212,79,.12);color:var(--yellow);border:1px solid rgba(247,212,79,.3)">${falta.toFixed(1)}h a cumprir</span>`
+                : esperado
+                  ? `<span class="badge badge-green">✔ OK</span>`
+                  : '<span style="color:var(--text2);font-size:12px">sem turno</span>'
+          }
+        </td>
+        <td style="text-align:right">
+          ${pctCarga !== null ? `
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+            <div style="width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="width:${pctCarga}%;height:100%;background:${isExtra?'var(--red)':deFerias?'var(--yellow)':'var(--accent)'};border-radius:3px"></div>
+            </div>
+            <span style="font-size:12px;color:var(--text2);width:36px;text-align:right">${pctCarga}%</span>
+          </div>` : `<span style="color:var(--text2);font-size:12px">${pct}% do total</span>`}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Gráficos ──
+  mkChart('chart-placa', 'bar',      agrupar(dados,'placa',10),       '#4f8ef7');
+  mkChart('chart-evento','doughnut', agrupar(dados,'evento',12),      null);
+  mkChart('chart-sub',   'bar',      agrupar(dados,'subsistema',10),  '#3ecf8e', true);
+  mkChart('chart-mec',   'bar',      agrupar(dados,'colaborador',10), '#f7934f');
+}
+
+const COLORS=['#4f8ef7','#3ecf8e','#f7934f','#f7d44f','#f75555','#a78bfa',
+              '#34d399','#fb923c','#60a5fa','#f472b6','#94a3b8','#fbbf24'];
+
+function agrupar(dados, campo, top) {
+  const map={};
+  dados.forEach(a => {
+    const k=a[campo]||'—';
+    map[k]=(map[k]||0)+(parseFloat(a.horas)||0);
+  });
+  const s=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,top);
+  return {labels:s.map(e=>e[0]), values:s.map(e=>+e[1].toFixed(2))};
+}
+
+function mkChart(id, type, {labels,values}, color, horiz=false) {
+  if(charts[id]) charts[id].destroy();
+  const ctx=document.getElementById(id);
+  if(!ctx) return;
+  charts[id]=new Chart(ctx,{
+    type,
+    data:{labels, datasets:[{
+      data:values,
+      backgroundColor: color ? color : COLORS.slice(0,labels.length),
+      borderColor:'transparent', borderRadius:4
+    }]},
+    options:{
+      indexAxis: horiz?'y':'x',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:type!=='bar',labels:{color:'#8b90a7',font:{size:11}}}},
+      scales: type==='bar' ? {
+        x:{ticks:{color:'#8b90a7',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'#8b90a7',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}
+      } : {}
+    }
+  });
+}
+
+// ── exportar ──
+function exportarCSV(apenasAtual) {
+  let rows = DB.apontamentos;
+  let nome = 'apontamentos_todos';
+  if(apenasAtual) {
+    const mes=parseInt(document.getElementById('filtro-mes').value);
+    const ano=parseInt(document.getElementById('filtro-ano').value);
+    rows = rows.filter(a=>matchMesAno(a.data,mes,ano));
+    nome = `apontamentos_${mes}_${ano}`;
+  }
+  const h=['Data','Colaborador','Tipo','Placa','H.Inicial','H.Final','Evento','Subsistema','Ordem','Observação','Horas'];
+  const lines=[h.join(';'),...rows.map(a=>[a.data,a.colaborador,a.tipo,a.placa,
+    a.horaIni,a.horaFim,a.evento,a.subsistema,a.ordem,a.tarefas,a.horas]
+    .map(v=>`"${v||''}"`).join(';'))];
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:nome+'.csv'});
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('CSV exportado!','success');
+}
+
+// ══════════════════════════════════════════
+//  GOOGLE SHEETS
+// ══════════════════════════════════════════
+async function enviarParaSheets(row) {
+  if(!SCRIPT_URL) return false;
+  try {
+    const url=SCRIPT_URL+'?action=add&data='+encodeURIComponent(JSON.stringify(row));
+    const r=await fetch(url);
+    const j=await r.json();
+    return j && j.success;
+  } catch(e){ return false; }
+}
+
+async function sincronizarSheets() {
+  if(!SCRIPT_URL) { toast('Configure o SCRIPT_URL para sincronizar com o Sheets.','error'); return; }
+  toast('Sincronizando...','');
+  try {
+    const url=SCRIPT_URL+'?action=getAll';
+    const r=await fetch(url);
+    const j=await r.json();
+    if(j && j.apontamentos) {
+      DB.apontamentos=j.apontamentos;
+      if(j.colaboradores) DB.colaboradores=j.colaboradores;
+      saveDB(); updateStats();
+      toast('Sincronizado!','success');
+    }
+  } catch(e){ toast('Erro ao sincronizar','error'); }
+}
+
+// ══════════════════════════════════════════
+//  AUTOCOMPLETE — seleção obrigatória da lista
+// ══════════════════════════════════════════
+function acSearch(input, listKey, dropId, valId) {
+  const q = input.value.toLowerCase();
+  const src = DB[listKey] || [];
+  const drop = document.getElementById(dropId);
+  const matches = q ? src.filter(s => s.toLowerCase().includes(q)) : src;
+
+  if (!matches.length) {
+    drop.innerHTML = `<div class="ac-empty">Nenhum resultado para "${input.value}"</div>`;
+    drop.classList.remove('hidden');
+    return;
+  }
+  drop.innerHTML = matches.slice(0,12).map(m =>
+    `<div class="autocomplete-item" onmousedown="acPick('${dropId}','${m.replace(/'/g,"\\'")}','${input.id}','${valId}')">${m}</div>`
+  ).join('');
+  drop.classList.remove('hidden');
+}
+
+function acPick(dropId, value, inputId, valId) {
+  document.getElementById(valId).value = value;
+  document.getElementById(inputId).value = '';
+  document.getElementById(dropId).classList.add('hidden');
+  const field = valId.replace('apo-','').replace('-val','');
+  acShowTag(field, value);
+}
+
+function acShowTag(field, value) {
+  const tagEl    = document.getElementById('apo-'+field+'-tag');
+  const searchEl = document.getElementById('apo-'+field+'-search');
+  if (!tagEl) return;
+  tagEl.innerHTML = `<span class="ac-selected-tag">✔ ${value}
+    <button onclick="acClear('${field}')" title="Remover">×</button></span>`;
+  if (searchEl) {
+    searchEl.classList.add('ac-selected');
+    searchEl.placeholder = 'Selecionado ✔';
+    searchEl.disabled = true;
+  }
+}
+
+function acClear(field) {
+  const labels = {tipo:'Buscar tipo...', placa:'Buscar placa...', evento:'Buscar evento...', subsistema:'Buscar subsistema...'};
+  ['val','tag'].forEach(s => {
+    const el = document.getElementById('apo-'+field+'-'+s);
+    if (el) { if(s==='tag') el.innerHTML=''; else el.value=''; }
+  });
+  const searchEl = document.getElementById('apo-'+field+'-search');
+  if (searchEl) {
+    searchEl.value = ''; searchEl.disabled = false;
+    searchEl.classList.remove('ac-selected');
+    searchEl.placeholder = '🔍 ' + (labels[field]||'Buscar...');
+  }
+  const dropEl = document.getElementById('apo-'+field+'-list');
+  if (dropEl) dropEl.classList.add('hidden');
+}
+
+document.addEventListener('click', e => {
+  document.querySelectorAll('.autocomplete-list').forEach(d => {
+    if (!d.parentElement?.contains(e.target)) d.classList.add('hidden');
+  });
+});
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function toMinutes(hhmm) {
+  if(!hhmm) return 0;
+  const parts = hhmm.split(':');
+  return parseInt(parts[0]||0)*60 + parseInt(parts[1]||0);
+}
+
+function calcHoras(ini, fim) {
+  const [h1,m1]=ini.split(':').map(Number);
+  const [h2,m2]=fim.split(':').map(Number);
+  let mins=(h2*60+m2)-(h1*60+m1);
+  if(mins<0) mins+=1440;
+  return (mins/60).toFixed(2);
+}
+
+function toBR(iso) {
+  const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`;
+}
+
+function matchMesAno(data, mes, ano) {
+  if(!data) return false;
+  const p=data.split('/');
+  if(p.length===3) return parseInt(p[1])===mes && parseInt(p[2])===ano;
+  const p2=data.split('-');
+  if(p2.length===3) return parseInt(p2[1])===mes && parseInt(p2[0])===ano;
+  return false;
+}
+
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+function hide(id){ document.getElementById(id).classList.add('hidden'); }
+
+function showMsg(id, msg, type) {
+  const el=document.getElementById(id);
+  el.className='alert alert-'+type; el.textContent=msg;
+  setTimeout(()=>{ el.textContent=''; el.className=''; },4000);
+}
+
+function toast(msg, type='') {
+  const c=document.getElementById('toast');
+  const el=document.createElement('div');
+  el.className='toast-item'+(type?' '+type:'');
+  el.innerHTML=(type==='success'?'✅ ':type==='error'?'❌ ':'ℹ️ ')+msg;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+</script>
+</body>
+</html>
