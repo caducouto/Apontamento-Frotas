@@ -406,7 +406,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <div class="stat"><div class="stat-label">Rodízios</div><div class="stat-val" id="bs-rod">—</div></div>
         </div>
         <div class="tbl-wrap"><div style="overflow-x:auto"><table>
-          <thead><tr><th>Data</th><th>Placa</th><th>KM</th><th>Serviço</th><th>Eixo</th><th>Posição</th><th>Pneu</th><th>Colaborador</th><th>Horas</th></tr></thead>
+          <thead><tr><th>Data</th><th>Placa</th><th>KM</th><th>Serviço</th><th>Eixo</th><th>Posição</th><th>Pneu</th><th>Colaborador</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th></tr></thead>
           <tbody id="bor-tbody"><tr><td class="td-empty" colspan="9">Filtre por período</td></tr></tbody>
         </table></div></div>
       </div>
@@ -891,7 +891,7 @@ async function carregarBor() {
   document.getElementById('bs-rod').textContent=data.filter(a=>a.servico==='Rodízio').length;
   const tbody=document.getElementById('bor-tbody');
   if(!data.length){tbody.innerHTML='<tr><td class="td-empty" colspan="9">Nenhum serviço</td></tr>';return;}
-  tbody.innerHTML=data.map(a=>`<tr><td>${fmtD(a.data)}</td><td><strong>${a.placa}</strong></td><td>${a.km||'—'}</td><td>${a.servico}</td><td>${a.eixo||'—'}</td><td>${a.posicao||'—'}</td><td>${a.pneu||'—'}</td><td>${a.colaborador}</td><td>${a.horas||''}</td></tr>`).join('');
+  tbody.innerHTML=data.map(a=>`<tr><td>${fmtD(a.data)}</td><td><strong>${a.placa}</strong></td><td>${a.km||'—'}</td><td>${a.servico}</td><td>${a.eixo||'—'}</td><td>${a.posicao||'—'}</td><td>${a.pneu||'—'}</td><td>${a.colaborador}</td><td>${a.hora_ini||'—'}</td><td>${a.hora_fim||'—'}</td><td>${a.horas||''}</td></tr>`).join('');
 }
 
 // ── Cadastros genéricos ──
