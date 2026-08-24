@@ -780,8 +780,8 @@ async function showHistBor() {
   const{data}=await sb.from('borracharia').select('*').eq('unidade',unitId).eq('colaborador',user.nome).order('data',{ascending:false});
   if(!data||!data.length){cont.innerHTML='<p style="color:var(--text2)">Nenhum serviço.</p>';return;}
   cont.innerHTML=`<div class="tbl-wrap"><div style="overflow-x:auto"><table>
-    <thead><tr><th>Data</th><th>Placa</th><th>KM</th><th>Serviço</th><th>Eixo</th><th>Posição</th><th>Horas</th></tr></thead>
-    <tbody>${data.map(a=>`<tr><td>${fmtD(a.data)}</td><td>${a.placa}</td><td>${a.km||'—'}</td><td>${a.servico}</td><td>${a.eixo||'—'}</td><td>${a.posicao||'—'}</td><td><strong>${a.horas||''}</strong></td></tr>`).join('')}</tbody>
+    <thead><tr><th>Data</th><th>Placa</th><th>KM</th><th>Serviço</th><th>Eixo</th><th>Posição</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th></tr></thead>
+    <tbody>${data.map(a=>`<tr><td>${fmtD(a.data)}</td><td>${a.placa}</td><td>${a.km||'—'}</td><td>${a.servico}</td><td>${a.eixo||'—'}</td><td>${a.posicao||'—'}</td><td>${a.hora_ini||'—'}</td><td>${a.hora_fim||'—'}</td><td><strong>${a.horas||''}</strong></td></tr>`).join('')}</tbody>
   </table></div></div>`;
 }
 
