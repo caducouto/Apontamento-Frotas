@@ -35,7 +35,7 @@ label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-trans
 /* LOGIN */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#f0faf6 0%,#f4f6f9 60%,#eff6ff 100%)}
 .login-wrap{width:100%;max-width:420px}
-.login-logo{font-family:var(--fh);font-size:30px;font-weight:800;margin-bottom:4px}.login-logo span{color:var(--teal)}
+.login-logo{font-family:var(--fh);font-size:18px;font-weight:800;margin-bottom:4px;white-space:nowrap}.login-logo span{color:var(--teal)}
 .login-sub{color:var(--text2);font-size:13px;margin-bottom:28px}
 .unit-btn{border:1.5px solid var(--border);border-radius:var(--rl);padding:13px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;background:var(--surface)}
 .unit-btn:hover{border-color:var(--teal);background:var(--teal-l)}.unit-btn.sel{border-color:var(--teal);background:var(--teal-l)}
@@ -166,17 +166,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
       <div class="login-logo">Apontamento<span>Frotas</span></div>
       <div class="login-sub">Sistema de manutenção de frotas</div>
       <div id="step-unit">
-        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Selecione a unidade</div>
-        <div class="unit-btn sel" id="ubtn-primavera" onclick="selUnit('primavera')">
-          <div class="unit-dot"></div><div><div class="unit-nome">Primavera do Leste</div><div class="unit-est">Mato Grosso — MT</div></div>
-        </div>
-        <div class="unit-btn" id="ubtn-itanhandu" onclick="selUnit('itanhandu')">
-          <div class="unit-dot"></div><div><div class="unit-nome">Itanhandu</div><div class="unit-est">Minas Gerais — MG</div></div>
-        </div>
-        <div class="unit-btn" id="ubtn-campanha" onclick="selUnit('campanha')">
-          <div class="unit-dot"></div><div><div class="unit-nome">Campanha</div><div class="unit-est">Minas Gerais — MG</div></div>
-        </div>
-        <div class="divider"></div>
         <div class="fg"><label>Matrícula</label>
           <input type="text" id="inp-mat" placeholder="Digite sua matrícula" inputmode="numeric" onkeydown="if(event.key==='Enter')doLogin()" autofocus />
         </div>
@@ -526,10 +515,28 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
       <!-- EXPORTAR -->
       <div id="atab-exportar" class="atab hidden">
         <div class="page-title">Exportar</div><div class="page-sub">Baixe os dados em Excel</div>
-        <div class="export-grid">
-          <div class="export-card"><div class="export-icon">📊</div><h3>Apontamentos — Período filtrado</h3><p>Período selecionado na aba Apontamentos</p><button class="btn btn-p" onclick="exportar('apontamentos','mes')">Baixar Excel</button></div>
+
+        <div class="filter-bar" style="margin-bottom:20px">
+          <h3>Selecione o período</h3>
+          <div class="filter-row">
+            <div class="fg"><label>Mês</label><select id="exp-mes"></select></div>
+            <div class="fg"><label>Ano</label><select id="exp-ano"></select></div>
+          </div>
+        </div>
+
+        <div class="export-grid" style="margin-bottom:20px">
+          <div class="export-card"><div class="export-icon">📊</div><h3>Apontamentos — Período</h3><p>Apontamentos do mês e ano selecionados acima</p><button class="btn btn-p" onclick="exportar('apontamentos','mes')">Baixar Excel</button></div>
           <div class="export-card"><div class="export-icon">📦</div><h3>Apontamentos — Completo</h3><p>Todos os apontamentos desta unidade</p><button class="btn btn-p" onclick="exportar('apontamentos','todos')">Baixar Excel</button></div>
           <div class="export-card"><div class="export-icon">🔴</div><h3>Borracharia — Completo</h3><p>Todos os serviços desta unidade</p><button class="btn btn-p" onclick="exportar('borracharia','todos')">Baixar Excel</button></div>
+        </div>
+
+        <div id="export-geral-section" class="hidden">
+          <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:4px">Exportação Geral</div>
+          <div style="color:var(--text2);font-size:13px;margin-bottom:16px">Baixe dados de todas as unidades em um único arquivo</div>
+          <div class="export-grid">
+            <div class="export-card"><div class="export-icon">🌎</div><h3>Apontamentos — Todas as unidades</h3><p>Uma aba por unidade no mesmo Excel</p><button class="btn btn-p" onclick="exportarGeral('apontamentos')">Baixar Excel</button></div>
+            <div class="export-card"><div class="export-icon">🌎</div><h3>Borracharia — Todas as unidades</h3><p>Uma aba por unidade no mesmo Excel</p><button class="btn btn-p" onclick="exportarGeral('borracharia')">Baixar Excel</button></div>
+          </div>
         </div>
       </div>
 
@@ -622,6 +629,7 @@ async function doLogin() {
   if (!mat) return showErr('Digite sua matrícula');
   hideErr(); show('loading');
 
+  // Admin Geral
   if (mat.toLowerCase() === 'admin') {
     hide('loading'); _tipoLogin='admin-geral';
     document.getElementById('senha-titulo').textContent='Admin Geral';
@@ -630,12 +638,18 @@ async function doLogin() {
     setTimeout(()=>document.getElementById('inp-senha').focus(),100); return;
   }
 
-  await carregarCache();
+  // Busca em todas as unidades simultaneamente
+  const unidades = Object.keys(UNIDADES);
+  const [adminsRes, colaborRes] = await Promise.all([
+    sb.from('admins').select('*').eq('ativo',true),
+    sb.from('colaboradores').select('*').eq('ativo',true)
+  ]);
 
   // Admin de unidade?
-  const { data: admins } = await sb.from('admins').select('*').eq('unidade',unitId).eq('ativo',true);
-  const adm = (admins||[]).find(a=>a.nome.toLowerCase()===mat.toLowerCase());
+  const adm = (adminsRes.data||[]).find(a=>a.nome.toLowerCase()===mat.toLowerCase());
   if (adm) {
+    unitId = adm.unidade;
+    await carregarCache();
     hide('loading'); _tipoLogin='admin-unit';
     user = { tipo:'admin-unit', nome:adm.nome, senhaEsperada:adm.senha };
     document.getElementById('senha-titulo').textContent='Admin — '+UNIDADES[unitId].nome;
@@ -644,10 +658,12 @@ async function doLogin() {
     setTimeout(()=>document.getElementById('inp-senha').focus(),100); return;
   }
 
-  // Colaborador
-  const colab = CACHE.colaboradores.find(c=>String(c.matricula)===String(mat));
+  // Colaborador em qualquer unidade
+  const colab = (colaborRes.data||[]).find(c=>String(c.matricula)===String(mat));
   hide('loading');
   if (!colab) return showErr('Matrícula não encontrada. Fale com o administrador.');
+  unitId = colab.unidade;
+  await carregarCache();
   user = { tipo:'mecanico', nome:colab.nome, matricula:mat, funcao:colab.funcao||'' };
   hide('login-screen');
   if (colab.funcao==='Borracheiro') showBor(); else showMec();
@@ -777,8 +793,8 @@ async function showAdmin() {
   const u=UNIDADES[unitId];
   document.getElementById('admin-pill').textContent=u.nome+' — '+u.estado;
   document.getElementById('admin-nome').textContent=user.nome;
-  if(user.tipo==='admin-geral'){show('badge-geral');show('tbtn-admins');show('sep-admins');}
-  else{hide('badge-geral');hide('tbtn-admins');hide('sep-admins');}
+  if(user.tipo==='admin-geral'){show('badge-geral');show('tbtn-admins');show('sep-admins');show('export-geral-section');}
+  else{hide('badge-geral');hide('tbtn-admins');hide('sep-admins');hide('export-geral-section');}
   await atualizarStats();
   iniciarRealtime();
   showTab('apontamentos');
@@ -1050,17 +1066,54 @@ async function renderAlertas() {
 // ── Exportar ──
 async function exportar(tabela,modo){
   toast('Preparando...','');
+  const mes=parseInt(document.getElementById('exp-mes').value);
+  const ano=parseInt(document.getElementById('exp-ano').value);
+  const ini=`${ano}-${String(mes).padStart(2,'0')}-01`;
+  const fim=`${ano}-${String(mes).padStart(2,'0')}-${new Date(ano,mes,0).getDate()}`;
+  const nomePeriodo=`${MESES[mes]}_${ano}`;
   let data;
   if(tabela==='apontamentos'){
-    data=modo==='mes'?_aposFilter:(await sb.from('apontamentos').select('*').eq('unidade',unitId).order('data',{ascending:false})).data||[];
-    if(!data.length){toast('Sem dados','err');return;}
-    xlsxDown(data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Tipo':a.tipo,'Placa':a.placa,'H.Ini':a.hora_ini,'H.Fim':a.hora_fim,'Evento':a.evento,'Subsistema':a.subsistema,'Horas':a.horas,'Obs':a.observacao||''})),'apontamentos');
+    if(modo==='mes'){
+      const res=await sb.from('apontamentos').select('*').eq('unidade',unitId).gte('data',ini).lte('data',fim).order('data',{ascending:false});
+      data=res.data||[];
+    } else {
+      data=(await sb.from('apontamentos').select('*').eq('unidade',unitId).order('data',{ascending:false})).data||[];
+    }
+    if(!data.length){toast('Sem dados no período','err');return;}
+    xlsxDown(data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Tipo':a.tipo,'Placa':a.placa,'H.Ini':a.hora_ini,'H.Fim':a.hora_fim,'Evento':a.evento,'Subsistema':a.subsistema,'Horas':a.horas,'Obs':a.observacao||''})),'apontamentos'+(modo==='mes'?'_'+nomePeriodo:''));
   } else {
-    data=(await sb.from('borracharia').select('*').eq('unidade',unitId).order('data',{ascending:false})).data||[];
+    if(modo==='mes'){
+      const res=await sb.from('borracharia').select('*').eq('unidade',unitId).gte('data',ini).lte('data',fim).order('data',{ascending:false});
+      data=res.data||[];
+    } else {
+      data=(await sb.from('borracharia').select('*').eq('unidade',unitId).order('data',{ascending:false})).data||[];
+    }
     if(!data.length){toast('Sem dados','err');return;}
-    xlsxDown(data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Placa':a.placa,'KM':a.km||'','Serviço':a.servico,'Eixo':a.eixo||'','Posição':a.posicao||'','Pneu':a.pneu||'','Horas':a.horas,'Obs':a.observacao||''})),'borracharia');
+    xlsxDown(data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Placa':a.placa,'KM':a.km||'','Serviço':a.servico,'Eixo':a.eixo||'','Posição':a.posicao||'','Pneu':a.pneu||'','Horas':a.horas,'Obs':a.observacao||''})),'borracharia'+(modo==='mes'?'_'+nomePeriodo:''));
   }
 }
+
+async function exportarGeral(tabela){
+  toast('Buscando dados de todas as unidades...','');
+  const wb=XLSX.utils.book_new();
+  for(const uid of Object.keys(UNIDADES)){
+    let data;
+    if(tabela==='apontamentos'){
+      const res=await sb.from('apontamentos').select('*').eq('unidade',uid).order('data',{ascending:false});
+      data=res.data||[];
+      const rows=data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Tipo':a.tipo,'Placa':a.placa,'H.Ini':a.hora_ini,'H.Fim':a.hora_fim,'Evento':a.evento,'Subsistema':a.subsistema,'Horas':a.horas,'Obs':a.observacao||''}));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),UNIDADES[uid].nome);
+    } else {
+      const res=await sb.from('borracharia').select('*').eq('unidade',uid).order('data',{ascending:false});
+      data=res.data||[];
+      const rows=data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Placa':a.placa,'KM':a.km||'','Serviço':a.servico,'Eixo':a.eixo||'','Posição':a.posicao||'','Pneu':a.pneu||'','Horas':a.horas,'Obs':a.observacao||''}));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),UNIDADES[uid].nome);
+    }
+  }
+  XLSX.writeFile(wb,`${tabela}_todas_unidades_${hoje()}.xlsx`);
+  toast('Excel gerado com todas as unidades!','ok');
+}
+
 function xlsxDown(rows,nome){
   const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Dados');XLSX.writeFile(wb,`${nome}_${UNIDADES[unitId].nome}_${hoje()}.xlsx`);
@@ -1137,8 +1190,8 @@ function populateSelects(){
   const y=new Date().getFullYear();const m=new Date().getMonth()+1;
   const mesOpts=MESES.slice(1).map((n,i)=>`<option value="${i+1}" ${i+1===m?'selected':''}>${n}</option>`).join('');
   const anoOpts=Array.from({length:6},(_,i)=>{const yr=y+1-i;return`<option value="${yr}" ${yr===y?'selected':''}>${yr}</option>`;}).join('');
-  ['f-mes','bf-mes','d-mes'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=(id==='d-mes'?'<option value="">Todos</option>':'')+mesOpts;});
-  ['f-ano','bf-ano','d-ano'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=anoOpts;});
+  ['f-mes','bf-mes','d-mes','exp-mes'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=(id==='d-mes'?'<option value="">Todos</option>':'')+mesOpts;});
+  ['f-ano','bf-ano','d-ano','exp-ano'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=anoOpts;});
 }
 function show(id){document.getElementById(id)?.classList.remove('hidden');}
 function hide(id){document.getElementById(id)?.classList.add('hidden');}
