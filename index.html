@@ -730,14 +730,90 @@ function limparApo(){
 async function showHist() {
   hide('mec-screen');show('hist-screen');
   document.getElementById('hist-pill').textContent=UNIDADES[unitId].nome+' — '+UNIDADES[unitId].estado;
+  await carregarHistMec();
+}
+
+async function carregarHistMec() {
   const cont=document.getElementById('hist-content');
   cont.innerHTML='<div style="text-align:center;padding:32px;color:var(--text2)">Carregando...</div>';
   const{data}=await sb.from('apontamentos').select('*').eq('unidade',unitId).eq('colaborador',user.nome).order('data',{ascending:false}).order('hora_ini',{ascending:false});
   if(!data||!data.length){cont.innerHTML='<p style="color:var(--text2);padding:20px">Nenhum apontamento.</p>';return;}
   cont.innerHTML=`<div class="tbl-wrap"><div style="overflow-x:auto"><table>
-    <thead><tr><th>Data</th><th>Tipo</th><th>Placa</th><th>Evento</th><th>Subsistema</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th></tr></thead>
-    <tbody>${data.map(a=>`<tr><td>${fmtD(a.data)}</td><td>${a.tipo}</td><td>${a.placa}</td><td>${a.evento}</td><td>${a.subsistema}</td><td>${a.hora_ini}</td><td>${a.hora_fim}</td><td><strong>${a.horas}</strong></td></tr>`).join('')}</tbody>
-  </table></div></div>`;
+    <thead><tr><th>Data</th><th>Tipo</th><th>Placa</th><th>Evento</th><th>Subsistema</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th><th></th></tr></thead>
+    <tbody>${data.map(a=>`<tr>
+      <td>${fmtD(a.data)}</td><td>${a.tipo}</td><td>${a.placa}</td><td>${a.evento}</td>
+      <td>${a.subsistema}</td><td>${a.hora_ini}</td><td>${a.hora_fim}</td><td><strong>${a.horas}</strong></td>
+      <td><button class="btn btn-g btn-s" onclick='abrirEdicao(${JSON.stringify(a)})'>✏️ Editar</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div></div>
+  <div id="modal-edicao" class="hidden"></div>`;
+}
+
+function abrirEdicao(a) {
+  const modal = document.getElementById('modal-edicao');
+  modal.className = '';
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="background:var(--surface);border-radius:var(--rl);padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-family:var(--fh);font-size:18px;font-weight:700">Editar Apontamento</div>
+          <button class="btn-i" onclick="fecharEdicao()" style="font-size:20px">✕</button>
+        </div>
+        <div class="fg"><label>Data *</label><input type="date" id="ed-data" value="${a.data}" /></div>
+        <div class="fr2" style="margin-bottom:14px">
+          <div class="fg" style="margin:0"><label>Tipo *</label>
+            <select id="ed-tipo">
+              ${CACHE.tipos.map(t=>`<option ${a.tipo===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fg" style="margin:0"><label>Placa *</label>
+            <select id="ed-placa">
+              ${CACHE.placas.map(p=>`<option ${a.placa===p?'selected':''}>${p}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="fr2" style="margin-bottom:14px">
+          <div class="fg" style="margin:0"><label>Hora Inicial *</label><input type="time" id="ed-hini" value="${a.hora_ini}" /></div>
+          <div class="fg" style="margin:0"><label>Hora Final *</label><input type="time" id="ed-hfim" value="${a.hora_fim}" /></div>
+        </div>
+        <div class="fr2" style="margin-bottom:14px">
+          <div class="fg" style="margin:0"><label>Evento *</label>
+            <select id="ed-evento">
+              ${CACHE.eventos.map(e=>`<option ${a.evento===e?'selected':''}>${e}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fg" style="margin:0"><label>Subsistema *</label>
+            <select id="ed-sub">
+              ${CACHE.subsistemas.map(s=>`<option ${a.subsistema===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label>Observação</label><textarea id="ed-obs">${a.observacao||''}</textarea></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-g" style="flex:1" onclick="fecharEdicao()">Cancelar</button>
+          <button class="btn btn-p" style="flex:2" onclick="salvarEdicao('${a.id}')">Salvar alterações</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function fecharEdicao() {
+  const m=document.getElementById('modal-edicao');
+  if(m){m.innerHTML='';m.className='hidden';}
+}
+
+async function salvarEdicao(id) {
+  const data=v('ed-data'),tipo=v('ed-tipo'),placa=v('ed-placa');
+  const hIni=v('ed-hini'),hFim=v('ed-hfim'),evento=v('ed-evento'),sub=v('ed-sub'),obs=v('ed-obs');
+  if(!data||!tipo||!placa||!hIni||!hFim||!evento||!sub) return toast('Preencha todos os campos obrigatórios','err');
+  const virou=toMin(hFim)<toMin(hIni);
+  const row={data,data_fim:virou?proxDia(data):data,tipo,placa,hora_ini:hIni,hora_fim:hFim,
+    evento,subsistema:sub,observacao:obs,horas:parseFloat(calcH(hIni,hFim)),virou_meia_noite:virou};
+  const{error}=await sb.from('apontamentos').update(row).eq('id',id);
+  if(error){toast('Erro ao salvar','err');return;}
+  toast('Apontamento atualizado! ✅','ok');
+  fecharEdicao();
+  carregarHistMec();
 }
 
 // ══════════════════════════════════════
