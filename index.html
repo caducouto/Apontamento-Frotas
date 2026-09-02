@@ -714,11 +714,17 @@ async function regApo() {
     horas:parseFloat(calcH(hIni,hFim)),virou_meia_noite:virou};
   const btn=document.getElementById('btn-reg-apo');
   btn.disabled=true;btn.textContent='Registrando...';
+  const{error}=await sb.from('apontamentos').insert(row);
+  if(error){
+    console.error('Erro ao salvar apontamento:',error);
+    btn.disabled=false;btn.textContent='Registrar Apontamento';
+    msg('apo-msg','❌ Erro ao salvar: '+error.message,'err');
+    toast('Erro ao salvar! Verifique os campos.','err');
+    return;
+  }
   toast('Apontamento registrado! ✅','ok');
   msg('apo-msg','Registrado com sucesso! ✅','ok');
   limparApo();btn.disabled=false;btn.textContent='Registrar Apontamento';
-  const{error}=await sb.from('apontamentos').insert(row);
-  if(error){toast('Erro ao salvar. Tente novamente.','err');console.error(error);}
 }
 
 function limparApo(){
@@ -841,11 +847,17 @@ async function regBor() {
     observacao:v('bor-obs'),horas:parseFloat(calcH(hIni,hFim))};
   const btn=document.getElementById('btn-reg-bor');
   btn.disabled=true;btn.textContent='Registrando...';
+  const{error}=await sb.from('borracharia').insert(row);
+  if(error){
+    console.error('Erro ao salvar borracharia:',error);
+    btn.disabled=false;btn.textContent='Registrar Serviço';
+    msg('bor-msg','❌ Erro ao salvar: '+error.message,'err');
+    toast('Erro ao salvar! Verifique os campos.','err');
+    return;
+  }
   toast('Serviço registrado! ✅','ok');msg('bor-msg','Registrado com sucesso! ✅','ok');
   ['bor-km','bor-pneu','bor-obs','bor-serv','bor-eixo','bor-pos'].forEach(id=>setV(id,''));
   acClear('placa','bor');btn.disabled=false;btn.textContent='Registrar Serviço';
-  const{error}=await sb.from('borracharia').insert(row);
-  if(error){toast('Erro ao salvar.','err');console.error(error);}
 }
 
 async function showHistBor() {
