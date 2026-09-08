@@ -1203,13 +1203,33 @@ async function exportar(tabela,modo){
   let data;
   if(tabela==='apontamentos'){
     if(modo==='mes'){
-      const res=await sb.from('apontamentos').select('*').eq('unidade',unitId).gte('data',ini).lte('data',fim).order('data',{ascending:false});
+      const res=await sb.from('apontamentos').select('*').eq('unidade',unitId).gte('data',ini).lte('data',fim).order('data',{ascending:false}).order('colaborador',{ascending:true});
       data=res.data||[];
     } else {
-      data=(await sb.from('apontamentos').select('*').eq('unidade',unitId).order('data',{ascending:false})).data||[];
+      data=(await sb.from('apontamentos').select('*').eq('unidade',unitId).order('data',{ascending:false}).order('colaborador',{ascending:true})).data||[];
     }
     if(!data.length){toast('Sem dados no período','err');return;}
-    xlsxDown(data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Tipo':a.tipo,'Placa':a.placa,'H.Ini':a.hora_ini,'H.Fim':a.hora_fim,'Evento':a.evento,'Subsistema':a.subsistema,'Horas':a.horas,'Obs':a.observacao||''})),'apontamentos'+(modo==='mes'?'_'+nomePeriodo:''));
+    // Buscar matrícula dos colaboradores
+    const colabMap={};
+    CACHE.colaboradores.forEach(c=>{colabMap[c.nome]=c.matricula||'';});
+    const rows=data.map(a=>({
+      'Data':fmtD(a.data),
+      'Matricula':colabMap[a.colaborador]||'',
+      'Colaborador':a.colaborador,
+      'Tipo Manutenção':a.tipo,
+      'Tipo Manutenção ':a.tipo,
+      'Placa':a.placa,
+      'Hora Inicial':a.hora_ini,
+      'Hora Final':a.hora_fim,
+      'N Evento':'',
+      'Evento':a.evento,
+      'N Subsistema':'',
+      'Subsistema':a.subsistema,
+      'Duração':a.horas,
+      'Ordem':'',
+      'Tarefas':a.observacao||''
+    }));
+    xlsxDown(rows,'Apontamento'+(modo==='mes'?'_'+nomePeriodo:''));
   } else {
     if(modo==='mes'){
       const res=await sb.from('borracharia').select('*').eq('unidade',unitId).gte('data',ini).lte('data',fim).order('data',{ascending:false});
@@ -1218,7 +1238,21 @@ async function exportar(tabela,modo){
       data=(await sb.from('borracharia').select('*').eq('unidade',unitId).order('data',{ascending:false})).data||[];
     }
     if(!data.length){toast('Sem dados','err');return;}
-    xlsxDown(data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Placa':a.placa,'KM':a.km||'','Serviço':a.servico,'Eixo':a.eixo||'','Posição':a.posicao||'','Pneu':a.pneu||'','Horas':a.horas,'Obs':a.observacao||''})),'borracharia'+(modo==='mes'?'_'+nomePeriodo:''));
+    const rows=data.map(a=>({
+      'Data':fmtD(a.data),
+      'Colaborador':a.colaborador,
+      'Placa':a.placa,
+      'KM':a.km||'',
+      'Hora Inicial':a.hora_ini,
+      'Hora Final':a.hora_fim,
+      'Serviço':a.servico,
+      'Eixo':a.eixo||'',
+      'Posição':a.posicao||'',
+      'Pneu':a.pneu||'',
+      'Horas':a.horas,
+      'Observação':a.observacao||''
+    }));
+    xlsxDown(rows,'Borracharia'+(modo==='mes'?'_'+nomePeriodo:''));
   }
 }
 
@@ -1230,12 +1264,26 @@ async function exportarGeral(tabela){
     if(tabela==='apontamentos'){
       const res=await sb.from('apontamentos').select('*').eq('unidade',uid).order('data',{ascending:false});
       data=res.data||[];
-      const rows=data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Tipo':a.tipo,'Placa':a.placa,'H.Ini':a.hora_ini,'H.Fim':a.hora_fim,'Evento':a.evento,'Subsistema':a.subsistema,'Horas':a.horas,'Obs':a.observacao||''}));
+      // Buscar colaboradores da unidade para matrícula
+      const cRes=await sb.from('colaboradores').select('nome,matricula').eq('unidade',uid);
+      const cMap={};(cRes.data||[]).forEach(c=>{cMap[c.nome]=c.matricula||'';});
+      const rows=data.map(a=>({
+        'Data':fmtD(a.data),'Matricula':cMap[a.colaborador]||'','Colaborador':a.colaborador,
+        'Tipo Manutenção':a.tipo,'Tipo Manutenção ':a.tipo,'Placa':a.placa,
+        'Hora Inicial':a.hora_ini,'Hora Final':a.hora_fim,
+        'N Evento':'','Evento':a.evento,'N Subsistema':'','Subsistema':a.subsistema,
+        'Duração':a.horas,'Ordem':'','Tarefas':a.observacao||''
+      }));
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),UNIDADES[uid].nome);
     } else {
       const res=await sb.from('borracharia').select('*').eq('unidade',uid).order('data',{ascending:false});
       data=res.data||[];
-      const rows=data.map(a=>({'Data':fmtD(a.data),'Colaborador':a.colaborador,'Placa':a.placa,'KM':a.km||'','Serviço':a.servico,'Eixo':a.eixo||'','Posição':a.posicao||'','Pneu':a.pneu||'','Horas':a.horas,'Obs':a.observacao||''}));
+      const rows=data.map(a=>({
+        'Data':fmtD(a.data),'Colaborador':a.colaborador,'Placa':a.placa,'KM':a.km||'',
+        'Hora Inicial':a.hora_ini,'Hora Final':a.hora_fim,'Serviço':a.servico,
+        'Eixo':a.eixo||'','Posição':a.posicao||'','Pneu':a.pneu||'',
+        'Horas':a.horas,'Observação':a.observacao||''
+      }));
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),UNIDADES[uid].nome);
     }
   }
@@ -1245,7 +1293,8 @@ async function exportarGeral(tabela){
 
 function xlsxDown(rows,nome){
   const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Dados');XLSX.writeFile(wb,`${nome}_${UNIDADES[unitId].nome}_${hoje()}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,ws,'Dados');
+  XLSX.writeFile(wb,`${nome}_${UNIDADES[unitId].nome}_${hoje()}.xlsx`);
   toast('Excel gerado!','ok');
 }
 
