@@ -140,6 +140,19 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 .toast.err{border-color:rgba(239,68,68,.4);color:var(--red);background:var(--red-l)}
 @keyframes tIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
 
+/* FOTOS */
+.foto-wrap{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.foto-thumb{position:relative;width:90px;height:90px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+.foto-thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+.foto-thumb .del-foto{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.foto-add{width:90px;height:90px;border:1.5px dashed var(--border2);border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:11px;font-weight:600;gap:4px;transition:all .15s;background:var(--bg)}
+.foto-add:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l)}
+.foto-add span{font-size:22px}
+.foto-progress{font-size:12px;color:var(--text2);margin-top:6px}
+/* MODAL FOTO */
+.foto-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.foto-modal img{max-width:100%;max-height:90vh;border-radius:var(--r);object-fit:contain}
+.foto-modal-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;cursor:pointer;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
 /* LOADING */
 #loading{position:fixed;inset:0;background:var(--surface);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
 .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite}
@@ -244,6 +257,16 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
         </div>
       </div>
       <div class="fg"><label>Observação</label><textarea id="apo-obs" placeholder="Opcional"></textarea></div>
+      <div class="fg">
+        <label>Fotos (opcional — até 3)</label>
+        <div class="foto-wrap" id="apo-fotos-wrap">
+          <div class="foto-add" onclick="document.getElementById('apo-foto-input').click()">
+            <span>📷</span>Adicionar foto
+          </div>
+        </div>
+        <input type="file" id="apo-foto-input" accept="image/*" multiple style="display:none" onchange="previewFotos(this)" />
+        <div class="foto-progress" id="apo-foto-progress"></div>
+      </div>
       <button class="btn btn-p btn-f" id="btn-reg-apo" onclick="regApo()">Registrar Apontamento</button>
       <div id="apo-msg" style="margin-top:12px"></div>
     </div>
@@ -581,7 +604,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.2'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.3'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -606,6 +629,7 @@ const CHART_COLORS = ['#0d9e75','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:false, autoRefreshToken:false } });
 let unitId = 'primavera', user = null, _tipoLogin = null;
 let CACHE = { colaboradores:[], placas:[], tipos:[], eventos:[], subsistemas:[] };
+let _fotosApo = []; // fotos selecionadas para o apontamento atual
 let _aposFilter = [], _rtSub = null;
 const charts = {};
 
@@ -755,7 +779,7 @@ async function regApo() {
     horas:parseFloat(calcH(hIni,hFim)),virou_meia_noite:virou};
   const btn=document.getElementById('btn-reg-apo');
   btn.disabled=true;btn.textContent='Registrando...';
-  const{error}=await sb.from('apontamentos').insert(row);
+  const{data:apoData,error}=await sb.from('apontamentos').insert(row).select('id').single();
   if(error){
     console.error('Erro ao salvar apontamento:',error);
     btn.disabled=false;btn.textContent='Registrar Apontamento';
@@ -763,9 +787,17 @@ async function regApo() {
     toast('Erro ao salvar! Verifique os campos.','err');
     return;
   }
+  // Upload de fotos se houver
+  if(_fotosApo.length > 0){
+    btn.textContent='Enviando fotos...';
+    const prog=document.getElementById('apo-foto-progress');
+    if(prog)prog.textContent='Enviando '+_fotosApo.length+' foto(s)...';
+    await uploadFotos(apoData.id);
+    if(prog)prog.textContent='';
+  }
   toast('Apontamento registrado! ✅','ok');
   msg('apo-msg','Registrado com sucesso! ✅','ok');
-  limparApo();btn.disabled=false;btn.textContent='Registrar Apontamento';
+  limparApo();limparFotos();btn.disabled=false;btn.textContent='Registrar Apontamento';
 }
 
 function limparApo(){
@@ -1000,7 +1032,8 @@ async function carregarApos() {
   if(!data.length){tbody.innerHTML='<tr><td class="td-empty" colspan="10">Nenhum apontamento</td></tr>';return;}
   tbody.innerHTML=data.map(a=>{
     const badge=a.tipo==='CORRETIVA'?'b-cor':a.tipo==='PREVENTIVA'?'b-pre':'b-ped';
-    return`<tr><td>${fmtD(a.data)}</td><td>${a.colaborador||''}</td><td><span class="badge ${badge}">${a.tipo||''}</span></td><td>${a.placa||''}</td><td>${a.evento||''}</td><td>${a.subsistema||''}</td><td>${a.hora_ini||''}</td><td>${a.hora_fim||''}</td><td><strong>${a.horas||''}</strong></td><td><button class="btn-i" onclick="delApo('${a.id}')">🗑️</button></td></tr>`;
+    const fotos=(a.fotos||[]).map(url=>`<img src="${url}" onclick="verFoto('${url}')" style="width:32px;height:32px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--border)" />`).join('');
+    return`<tr><td>${fmtD(a.data)}</td><td>${a.colaborador||''}</td><td><span class="badge ${badge}">${a.tipo||''}</span></td><td>${a.placa||''}</td><td>${a.evento||''}</td><td>${a.subsistema||''}</td><td>${a.hora_ini||''}</td><td>${a.hora_fim||''}</td><td><strong>${a.horas||''}</strong></td><td style="display:flex;gap:4px;align-items:center">${fotos}<button class="btn-i" onclick="delApo('${a.id}')">🗑️</button></td></tr>`;
   }).join('');
 }
 
@@ -1296,6 +1329,79 @@ function xlsxDown(rows,nome){
   XLSX.utils.book_append_sheet(wb,ws,'Dados');
   XLSX.writeFile(wb,`${nome}_${UNIDADES[unitId].nome}_${hoje()}.xlsx`);
   toast('Excel gerado!','ok');
+}
+
+// ══════════════════════════════════════
+//  FOTOS
+// ══════════════════════════════════════
+function previewFotos(input) {
+  const files = Array.from(input.files);
+  const restante = 3 - _fotosApo.length;
+  if (restante <= 0) { toast('Máximo de 3 fotos por apontamento','err'); input.value=''; return; }
+  const novas = files.slice(0, restante);
+  if (files.length > restante) toast(`Apenas ${restante} foto(s) adicionada(s) — limite de 3`,'');
+  novas.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      _fotosApo.push({ file, preview: e.target.result });
+      renderFotos();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderFotos() {
+  const wrap = document.getElementById('apo-fotos-wrap');
+  if (!wrap) return;
+  const thumbs = _fotosApo.map((f, i) => `
+    <div class="foto-thumb">
+      <img src="${f.preview}" onclick="verFoto('${f.preview}')" />
+      <button class="del-foto" onclick="removerFoto(${i})">✕</button>
+    </div>`).join('');
+  const addBtn = _fotosApo.length < 3
+    ? `<div class="foto-add" onclick="document.getElementById('apo-foto-input').click()"><span>📷</span>Adicionar foto</div>`
+    : '';
+  wrap.innerHTML = thumbs + addBtn;
+}
+
+function removerFoto(idx) {
+  _fotosApo.splice(idx, 1);
+  renderFotos();
+}
+
+async function uploadFotos(apontamentoId) {
+  const urls = [];
+  for (let i = 0; i < _fotosApo.length; i++) {
+    const { file } = _fotosApo[i];
+    const ext = file.name.split('.').pop();
+    const path = `${unitId}/${apontamentoId}/foto_${i+1}.${ext}`;
+    const { error } = await sb.storage.from('fotos-apontamentos').upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = sb.storage.from('fotos-apontamentos').getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+  }
+  if (urls.length > 0) {
+    await sb.from('apontamentos').update({ fotos: urls }).eq('id', apontamentoId);
+  }
+  return urls;
+}
+
+function verFoto(url) {
+  const div = document.createElement('div');
+  div.className = 'foto-modal';
+  div.innerHTML = `<button class="foto-modal-close" onclick="this.parentElement.remove()">✕</button><img src="${url}" />`;
+  div.onclick = e => { if(e.target === div) div.remove(); };
+  document.body.appendChild(div);
+}
+
+function limparFotos() {
+  _fotosApo = [];
+  const wrap = document.getElementById('apo-fotos-wrap');
+  if (wrap) wrap.innerHTML = `<div class="foto-add" onclick="document.getElementById('apo-foto-input').click()"><span>📷</span>Adicionar foto</div>`;
+  const prog = document.getElementById('apo-foto-progress');
+  if (prog) prog.textContent = '';
 }
 
 // ══════════════════════════════════════
