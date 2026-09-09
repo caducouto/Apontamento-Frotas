@@ -604,7 +604,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.3'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.4'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -760,7 +760,9 @@ function showMec() {
   document.getElementById('mec-pill').textContent=u.nome+' — '+u.estado;
   document.getElementById('mec-nome').textContent=user.nome;
   document.getElementById('mec-bv').textContent='Bem-vindo, '+user.nome;
-  document.getElementById('apo-data').value=hoje();
+  const inputData = document.getElementById('apo-data');
+  inputData.value=hoje();
+  inputData.max=hoje();
 }
 
 async function regApo() {
@@ -773,6 +775,20 @@ async function regApo() {
   if(!hFim)return msg('apo-msg','Informe hora final','err');
   if(!evento)return msg('apo-msg','Selecione o evento','err');
   if(!sub)return msg('apo-msg','Selecione o subsistema','err');
+  // Validar data e hora futuras
+  const agora = new Date();
+  const dataSel = new Date(data + 'T00:00:00');
+  const hojeD = new Date(hoje() + 'T00:00:00');
+  if(dataSel > hojeD) return msg('apo-msg','❌ Não é permitido registrar apontamentos em datas futuras.','err');
+  if(data === hoje()){
+    const [hh,mm] = hIni.split(':');
+    const hIniDate = new Date(); hIniDate.setHours(+hh,+mm,0,0);
+    if(hIniDate > agora) return msg('apo-msg','❌ A hora inicial não pode ser no futuro.','err');
+    const [hh2,mm2] = hFim.split(':');
+    const hFimDate = new Date(); hFimDate.setHours(+hh2,+mm2,0,0);
+    const virou2 = toMin(hFim) < toMin(hIni);
+    if(!virou2 && hFimDate > agora) return msg('apo-msg','❌ A hora final não pode ser no futuro.','err');
+  }
   const virou=toMin(hFim)<toMin(hIni);
   const row={unidade:unitId,data,data_fim:virou?proxDia(data):data,colaborador:user.nome,tipo,placa,
     hora_ini:hIni,hora_fim:hFim,evento,subsistema:sub,observacao:obs,
