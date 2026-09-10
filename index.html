@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Apontamento Frotas</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="AponFrotas">
+<meta name="theme-color" content="#0d9e75">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
 :root{
   --bg:#f4f6f9;--surface:#fff;--surface2:#f0f2f6;--border:#e2e6ef;--border2:#c9d0e0;
@@ -193,6 +200,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <input type="text" id="inp-mat" placeholder="Digite sua matrícula" inputmode="numeric" onkeydown="if(event.key==='Enter')doLogin()" autofocus />
         </div>
         <button class="btn btn-p btn-f" onclick="doLogin()">Entrar →</button>
+        <button id="btn-instalar-pwa" class="hidden btn btn-g btn-f" style="margin-top:8px" onclick="instalarPWA()">📲 Instalar app no celular</button>
       </div>
       <div id="step-senha" class="hidden">
         <div style="text-align:center;margin-bottom:20px">
@@ -604,7 +612,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.5'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.6'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -1512,6 +1520,37 @@ function toast(texto,type=''){
   el.className='toast'+(type?' '+type:'');el.textContent=texto;c.appendChild(el);
   setTimeout(()=>el.remove(),3500);
 }
+
+// Instalar PWA
+function instalarPWA(){
+  if(!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  _deferredPrompt.userChoice.then(r=>{
+    if(r.outcome==='accepted') toast('App instalado com sucesso! 📲','ok');
+    _deferredPrompt=null;
+    const btn=document.getElementById('btn-instalar-pwa');
+    if(btn) btn.classList.add('hidden');
+  });
+}
+
+// Registrar Service Worker (PWA)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .then(()=>console.log('SW registrado'))
+      .catch(e=>console.log('SW erro:',e));
+  });
+}
+
+// Banner de instalação PWA
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  // Mostrar botão de instalação no login
+  const btn = document.getElementById('btn-instalar-pwa');
+  if(btn) btn.classList.remove('hidden');
+});
 </script>
 </body>
 </html>
