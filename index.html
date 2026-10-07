@@ -29,7 +29,7 @@ input,select,textarea{width:100%;background:var(--surface);border:1px solid var(
 input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,158,117,.12)}
 textarea{resize:vertical;min-height:72px}
 label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--r);border:none;font-family:var(--fb);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn{touch-action:manipulation;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--r);border:none;font-family:var(--fb);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn-p{background:var(--teal);color:#fff}.btn-p:hover{background:var(--teal-d)}.btn-p:disabled{opacity:.5;cursor:not-allowed}
 .btn-g{background:transparent;border:1px solid var(--border2);color:var(--text2)}.btn-g:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l)}
 .btn-d{background:transparent;border:1px solid #fca5a5;color:var(--red)}.btn-d:hover{background:var(--red-l)}
@@ -275,7 +275,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
         <input type="file" id="apo-foto-input" accept="image/*" multiple style="display:none" onchange="previewFotos(this)" />
         <div class="foto-progress" id="apo-foto-progress"></div>
       </div>
-      <button class="btn btn-p btn-f" id="btn-reg-apo" onclick="regApo()">Registrar Apontamento</button>
+      <button class="btn btn-p btn-f" id="btn-reg-apo" type="button" data-act="regApo">Registrar Apontamento</button>
       <div id="apo-msg" style="margin-top:12px"></div>
     </div>
   </div>
@@ -342,7 +342,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
       </div>
       <div class="fg"><label>Número / Código do Pneu</label><input type="text" id="bor-pneu" placeholder="Ex: 001234" style="text-transform:uppercase" /></div>
       <div class="fg"><label>Observação</label><textarea id="bor-obs" placeholder="Opcional"></textarea></div>
-      <button class="btn btn-p btn-f" id="btn-reg-bor" onclick="regBor()">Registrar Serviço</button>
+      <button class="btn btn-p btn-f" id="btn-reg-bor" type="button" data-act="regBor">Registrar Serviço</button>
       <div id="bor-msg" style="margin-top:12px"></div>
     </div>
   </div>
@@ -415,12 +415,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <div class="filter-row">
             <div class="fg"><label>Mês</label><select id="f-mes"></select></div>
             <div class="fg"><label>Ano</label><select id="f-ano"></select></div>
-            <div class="fg"><label>Colaborador</label><input type="text" id="f-colab" placeholder="Todos" /></div>
+            <div class="fg"><label>Colaborador</label><input type="text" id="f-colab" list="colab-list-dl" placeholder="Digite o nome (todos)" autocomplete="off" oninput="filtrarAposDebounce()" /></div>
             <button class="btn btn-p" onclick="carregarApos()">Filtrar</button>
+            <button class="btn btn-g" onclick="setV('f-colab','');carregarApos()">Limpar</button>
+            <datalist id="colab-list-dl"></datalist>
           </div>
         </div>
         <div class="tbl-wrap">
-          <div class="tbl-head"><div><h3>Apontamentos</h3><p id="apo-sub"></p></div></div>
+          <div class="tbl-head"><div><h3>Apontamentos</h3><p id="apo-sub"></p></div><button class="btn btn-p" onclick="exportarFiltro()">📥 Baixar Excel deste filtro</button></div>
           <div style="overflow-x:auto">
             <table><thead><tr><th>Data</th><th>Colaborador</th><th>Tipo</th><th>Placa</th><th>Evento</th><th>Subsistema</th><th>H.Ini</th><th>H.Fim</th><th>Horas</th><th></th></tr></thead>
             <tbody id="apo-tbody"><tr><td class="td-empty" colspan="10">Filtre por período</td></tr></tbody></table>
@@ -571,6 +573,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <div class="export-card"><div class="export-icon">🔴</div><h3>Borracharia — Completo</h3><p>Todos os serviços desta unidade</p><button class="btn btn-p" onclick="exportar('borracharia','todos')">Baixar Excel</button></div>
         </div>
 
+        <div class="filter-bar" style="margin-bottom:20px">
+          <h3>Exportar um colaborador</h3>
+          <div class="filter-row">
+            <div class="fg"><label>Colaborador</label><input type="text" id="exp-colab" list="colab-list-dl" placeholder="Digite o nome" autocomplete="off" /></div>
+            <button class="btn btn-p" onclick="exportarColab('mes')">Baixar período selecionado</button>
+            <button class="btn btn-g" onclick="exportarColab('todos')">Baixar tudo dele</button>
+          </div>
+        </div>
+
         <div id="export-geral-section" class="hidden">
           <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:4px">Exportação Geral</div>
           <div style="color:var(--text2);font-size:13px;margin-bottom:16px">Baixe dados de todas as unidades em um único arquivo</div>
@@ -612,7 +623,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.6'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.8'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -980,6 +991,7 @@ async function showAdmin() {
   if(user.tipo==='admin-geral'){show('badge-geral');show('tbtn-admins');show('sep-admins');show('export-geral-section');}
   else{hide('badge-geral');hide('tbtn-admins');hide('sep-admins');hide('export-geral-section');}
   await atualizarStats();
+  popularColabList();
   iniciarRealtime();
   showTab('apontamentos');
 }
@@ -1060,6 +1072,48 @@ async function carregarApos() {
   }).join('');
 }
 
+let _filtroTimer=null;
+function filtrarAposDebounce(){clearTimeout(_filtroTimer);_filtroTimer=setTimeout(carregarApos,350);}
+function popularColabList(){
+  const dl=document.getElementById('colab-list-dl');if(!dl)return;
+  dl.innerHTML=(CACHE.colaboradores||[]).map(c=>`<option value="${String(c.nome).replace(/"/g,'&quot;')}"></option>`).join('');
+}
+function rowsApoExcel(data){
+  const colabMap={};(CACHE.colaboradores||[]).forEach(c=>{colabMap[c.nome]=c.matricula||'';});
+  return data.map(a=>({
+    'Data':fmtD(a.data),'Matricula':colabMap[a.colaborador]||'','Colaborador':a.colaborador,
+    'Tipo Manutenção':a.tipo,'Tipo Manutenção ':a.tipo,'Placa':a.placa,
+    'Hora Inicial':a.hora_ini,'Hora Final':a.hora_fim,
+    'N Evento':'','Evento':a.evento,'N Subsistema':'','Subsistema':a.subsistema,
+    'Duração':a.horas,'Ordem':'','Tarefas':a.observacao||''
+  }));
+}
+function nomeArq(t){return String(t).trim().replace(/[^\wÀ-ÿ]+/g,'_').replace(/^_|_$/g,'');}
+// Baixa exatamente o que está filtrado na tela (mês/ano + colaborador)
+function exportarFiltro(){
+  if(!_aposFilter.length){toast('Nada para exportar neste filtro','err');return;}
+  const mes=parseInt(document.getElementById('f-mes').value),ano=document.getElementById('f-ano').value;
+  const colab=(document.getElementById('f-colab').value||'').trim();
+  xlsxDown(rowsApoExcel(_aposFilter),'Apontamento_'+(colab?nomeArq(colab)+'_':'')+MESES[mes]+'_'+ano);
+}
+// Exporta um colaborador (período selecionado ou todo o histórico)
+async function exportarColab(modo){
+  const colab=(document.getElementById('exp-colab').value||'').trim();
+  if(!colab){toast('Digite o nome do colaborador','err');return;}
+  toast('Preparando...','');
+  const mes=parseInt(document.getElementById('exp-mes').value),ano=parseInt(document.getElementById('exp-ano').value);
+  let q=sb.from('apontamentos').select('*').eq('unidade',unitId).order('data',{ascending:false}).order('hora_ini',{ascending:false});
+  const exato=(CACHE.colaboradores||[]).some(c=>c.nome===colab);
+  q=exato?q.eq('colaborador',colab):q.ilike('colaborador','%'+colab+'%');
+  if(modo==='mes'){
+    q=q.gte('data',`${ano}-${String(mes).padStart(2,'0')}-01`).lte('data',`${ano}-${String(mes).padStart(2,'0')}-${new Date(ano,mes,0).getDate()}`);
+  }
+  const{data,error}=await q;
+  if(error){toast('Erro ao buscar: '+error.message,'err');return;}
+  if(!data||!data.length){toast('Nenhum apontamento para "'+colab+'"'+(modo==='mes'?' neste período':''),'err');return;}
+  xlsxDown(rowsApoExcel(data),'Apontamento_'+nomeArq(colab)+(modo==='mes'?'_'+MESES[mes]+'_'+ano:''));
+}
+
 async function delApo(id){if(!confirm('Excluir?'))return;await sb.from('apontamentos').delete().eq('id',id);toast('Excluído','ok');carregarApos();atualizarStats();}
 
 // ── Borracharia ──
@@ -1121,7 +1175,7 @@ function filtrarGrid(inp,gridId){
 // ── Colaboradores ──
 async function renderColabs() {
   const{data}=await sb.from('colaboradores').select('*,ferias(*)').eq('unidade',unitId).eq('ativo',true).order('nome');
-  if(!data)return;CACHE.colaboradores=data;
+  if(!data)return;CACHE.colaboradores=data;popularColabList();
   const cont=document.getElementById('colab-list');
   if(!data.length){cont.innerHTML='<p style="color:var(--text2)">Nenhum colaborador.</p>';return;}
   const funcOpts=['Auxiliar de Mecânico','Mecânico','Mecânico 1','Mecânico 2','Mecânico 3','Eletricista','Borracheiro','Lavador'];
@@ -1465,12 +1519,33 @@ function acClear(field,prefix){
   });
 }
 
+// Botões principais: dispara no pointerup (não se perde quando o teclado fecha e o layout muda no 1º toque)
+(function(){
+  const acts={regApo:()=>regApo(),regBor:()=>regBor()};
+  let lock=0;
+  function run(name){
+    const now=Date.now();
+    if(now-lock<700)return; lock=now;
+    acts[name]();
+  }
+  document.addEventListener('pointerup',e=>{
+    const b=e.target.closest&&e.target.closest('button[data-act]');
+    if(!b||b.disabled)return;
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    run(b.dataset.act);
+  });
+  // teclado (Enter/Espaço) -> click sem ponteiro (detail===0)
+  document.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('button[data-act]');
+    if(b&&!b.disabled&&e.detail===0)run(b.dataset.act);
+  });
+})();
 document.addEventListener('click',e=>{document.querySelectorAll('.ac-drop').forEach(d=>{if(!d.parentElement?.contains(e.target))d.classList.add('hidden');});});
 
 // ══════════════════════════════════════
 //  UTILS
 // ══════════════════════════════════════
-function hoje(){return new Date().toISOString().split('T')[0];}
+function hoje(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function toMin(hhmm){if(!hhmm)return 0;const[h,m]=hhmm.split(':');return+h*60+ +m;}
 function calcH(ini,fim){let m=toMin(fim)-toMin(ini);if(m<0)m+=1440;return(m/60).toFixed(2);}
 function proxDia(iso){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
@@ -1513,7 +1588,8 @@ function logout(){
 function msg(id,texto,type){
   const el=document.getElementById(id);if(!el)return;
   el.innerHTML=`<div style="padding:10px 14px;border-radius:var(--r);font-size:13px;background:${type==='err'?'var(--red-l)':'var(--teal-l)'};border:1px solid ${type==='err'?'rgba(239,68,68,.3)':'rgba(13,158,117,.3)'};color:${type==='err'?'var(--red)':'var(--teal-d)'}">${texto}</div>`;
-  setTimeout(()=>{if(el)el.innerHTML='';},5000);
+  try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+  setTimeout(()=>{if(el)el.innerHTML='';},8000);
 }
 function toast(texto,type=''){
   const c=document.getElementById('toast-cnt');const el=document.createElement('div');
