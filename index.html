@@ -415,10 +415,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <div class="filter-row">
             <div class="fg"><label>Mês</label><select id="f-mes"></select></div>
             <div class="fg"><label>Ano</label><select id="f-ano"></select></div>
-            <div class="fg"><label>Colaborador</label><input type="text" id="f-colab" list="colab-list-dl" placeholder="Digite o nome (todos)" autocomplete="off" oninput="filtrarAposDebounce()" /></div>
+            <div class="fg" style="min-width:260px;flex:1.4"><label>🔍 Buscar funcionário</label><div class="ac-wrap"><input type="text" id="f-colab" placeholder="Digite o nome..." autocomplete="off" oninput="sugColab('f-colab','f-colab-d');filtrarAposDebounce()" onfocus="sugColab('f-colab','f-colab-d')" onkeydown="if(event.key==='Enter'){hide('f-colab-d');carregarApos();}" /><div class="ac-drop hidden" id="f-colab-d"></div></div></div>
             <button class="btn btn-p" onclick="carregarApos()">Filtrar</button>
             <button class="btn btn-g" onclick="setV('f-colab','');carregarApos()">Limpar</button>
-            <datalist id="colab-list-dl"></datalist>
+            
           </div>
         </div>
         <div class="tbl-wrap">
@@ -576,7 +576,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
         <div class="filter-bar" style="margin-bottom:20px">
           <h3>Exportar um colaborador</h3>
           <div class="filter-row">
-            <div class="fg"><label>Colaborador</label><input type="text" id="exp-colab" list="colab-list-dl" placeholder="Digite o nome" autocomplete="off" /></div>
+            <div class="fg" style="min-width:260px;flex:1.4"><label>🔍 Buscar funcionário</label><div class="ac-wrap"><input type="text" id="exp-colab" placeholder="Digite o nome..." autocomplete="off" oninput="sugColab('exp-colab','exp-colab-d')" onfocus="sugColab('exp-colab','exp-colab-d')" /><div class="ac-drop hidden" id="exp-colab-d"></div></div></div>
             <button class="btn btn-p" onclick="exportarColab('mes')">Baixar período selecionado</button>
             <button class="btn btn-g" onclick="exportarColab('todos')">Baixar tudo dele</button>
           </div>
@@ -623,7 +623,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.8'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.9'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -1074,9 +1074,23 @@ async function carregarApos() {
 
 let _filtroTimer=null;
 function filtrarAposDebounce(){clearTimeout(_filtroTimer);_filtroTimer=setTimeout(carregarApos,350);}
-function popularColabList(){
-  const dl=document.getElementById('colab-list-dl');if(!dl)return;
-  dl.innerHTML=(CACHE.colaboradores||[]).map(c=>`<option value="${String(c.nome).replace(/"/g,'&quot;')}"></option>`).join('');
+function popularColabList(){}
+function _norm(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+// Caixa de busca de funcionário com sugestões (ignora acentos e maiúsculas)
+function sugColab(inputId,dropId){
+  const inp=document.getElementById(inputId),drop=document.getElementById(dropId);if(!inp||!drop)return;
+  const q=_norm(inp.value.trim());
+  const nomes=(CACHE.colaboradores||[]).map(c=>c.nome).filter(n=>!q||_norm(n).includes(q));
+  if(!nomes.length){drop.innerHTML='<div class="ac-empty">Nenhum funcionário encontrado</div>';drop.classList.remove('hidden');return;}
+  drop.innerHTML=nomes.slice(0,20).map((n,i)=>`<div class="ac-item" data-i="${i}">${n}</div>`).join('');
+  drop.querySelectorAll('.ac-item').forEach((el,i)=>{
+    el.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      inp.value=nomes[i];drop.classList.add('hidden');
+      if(inputId==='f-colab')carregarApos();
+    });
+  });
+  drop.classList.remove('hidden');
 }
 function rowsApoExcel(data){
   const colabMap={};(CACHE.colaboradores||[]).forEach(c=>{colabMap[c.nome]=c.matricula||'';});
