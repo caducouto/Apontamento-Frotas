@@ -623,7 +623,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.10'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.11'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -645,7 +645,31 @@ const CHART_COLORS = ['#0d9e75','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899
 // ══════════════════════════════════════
 //  ESTADO
 // ══════════════════════════════════════
-const sb = supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:false, autoRefreshToken:false } });
+// Safari/iPhone às vezes falha ("Load failed") no 1º pedido após a conexão ficar parada.
+// Este fetch tenta de novo automaticamente antes de dar erro.
+async function sbFetch(url,opts){
+  let ultimo;
+  for(let i=0;i<3;i++){
+    try{return await fetch(url,opts);}
+    catch(e){
+      ultimo=e;
+      if(opts&&opts.signal&&opts.signal.aborted)throw e;
+      await new Promise(r=>setTimeout(r,500*(i+1)));
+    }
+  }
+  throw ultimo;
+}
+function novoId(){
+  if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);});
+}
+function erroAmigavel(err){
+  const m=String((err&&err.message)||err||'');
+  if(/load failed|failed to fetch|networkerror|network request failed/i.test(m))
+    return 'Sem conexão com o servidor. Verifique a internet e tente de novo.';
+  return m;
+}
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:false, autoRefreshToken:false }, global:{ fetch:sbFetch } });
 let unitId = 'primavera', user = null, _tipoLogin = null;
 let CACHE = { colaboradores:[], placas:[], tipos:[], eventos:[], subsistemas:[] };
 let _fotosApo = []; // fotos selecionadas para o apontamento atual
@@ -808,17 +832,23 @@ async function regApo() {
     if(!virou2 && hFimMin > agoraMin) return msg('apo-msg','❌ A hora final não pode ser no futuro.','err');
   }
   const virou=toMin(hFim)<toMin(hIni);
-  const row={unidade:unitId,data,data_fim:virou?proxDia(data):data,colaborador:user.nome,tipo,placa,
+  const row={id:novoId(),unidade:unitId,data,data_fim:virou?proxDia(data):data,colaborador:user.nome,tipo,placa,
     hora_ini:hIni,hora_fim:hFim,evento,subsistema:sub,observacao:obs,
     horas:parseFloat(calcH(hIni,hFim)),virou_meia_noite:virou};
   const btn=document.getElementById('btn-reg-apo');
   btn.disabled=true;btn.textContent='Registrando...';
-  const{data:apoData,error}=await sb.from('apontamentos').insert(row).select('id').single();
+  let apoData=null,error=null;
+  try{
+    const r=await sb.from('apontamentos').insert(row).select('id').single();
+    apoData=r.data;error=r.error;
+  }catch(e){error=e;}
+  // 23505/409 = o 1º envio já tinha chegado e só a resposta se perdeu: o registro existe
+  if(error&&(error.code==='23505'||/duplicate key/i.test(error.message||''))){apoData={id:row.id};error=null;}
   if(error){
     console.error('Erro ao salvar apontamento:',error);
     btn.disabled=false;btn.textContent='Registrar Apontamento';
-    msg('apo-msg','❌ Erro ao salvar: '+error.message,'err');
-    toast('Erro ao salvar! Verifique os campos.','err');
+    msg('apo-msg','❌ Erro ao salvar: '+erroAmigavel(error),'err');
+    toast('Não foi possível salvar. Tente novamente.','err');
     return;
   }
   // Upload de fotos se houver
@@ -949,17 +979,19 @@ async function regBor() {
   if(!hIni)return msg('bor-msg','Informe hora inicial','err');
   if(!hFim)return msg('bor-msg','Informe hora final','err');
   if(!serv)return msg('bor-msg','Selecione o serviço','err');
-  const row={unidade:unitId,data,colaborador:user.nome,placa,km,hora_ini:hIni,hora_fim:hFim,
+  const row={id:novoId(),unidade:unitId,data,colaborador:user.nome,placa,km,hora_ini:hIni,hora_fim:hFim,
     servico:serv,eixo:v('bor-eixo'),posicao:v('bor-pos'),pneu:v('bor-pneu').toUpperCase(),
     observacao:v('bor-obs'),horas:parseFloat(calcH(hIni,hFim))};
   const btn=document.getElementById('btn-reg-bor');
   btn.disabled=true;btn.textContent='Registrando...';
-  const{error}=await sb.from('borracharia').insert(row);
+  let error=null;
+  try{error=(await sb.from('borracharia').insert(row)).error;}catch(e){error=e;}
+  if(error&&(error.code==='23505'||/duplicate key/i.test(error.message||'')))error=null;
   if(error){
     console.error('Erro ao salvar borracharia:',error);
     btn.disabled=false;btn.textContent='Registrar Serviço';
-    msg('bor-msg','❌ Erro ao salvar: '+error.message,'err');
-    toast('Erro ao salvar! Verifique os campos.','err');
+    msg('bor-msg','❌ Erro ao salvar: '+erroAmigavel(error),'err');
+    toast('Não foi possível salvar. Tente novamente.','err');
     return;
   }
   toast('Serviço registrado! ✅','ok');msg('bor-msg','Registrado com sucesso! ✅','ok');
