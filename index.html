@@ -416,8 +416,9 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
             <div class="fg"><label>Mês</label><select id="f-mes"></select></div>
             <div class="fg"><label>Ano</label><select id="f-ano"></select></div>
             <div class="fg" style="min-width:260px;flex:1.4"><label>🔍 Buscar funcionário</label><div class="ac-wrap"><input type="text" id="f-colab" placeholder="Digite o nome..." autocomplete="off" oninput="sugColab('f-colab','f-colab-d');filtrarAposDebounce()" onfocus="sugColab('f-colab','f-colab-d')" onkeydown="if(event.key==='Enter'){hide('f-colab-d');carregarApos();}" /><div class="ac-drop hidden" id="f-colab-d"></div></div></div>
+            <div class="fg" style="min-width:200px;flex:1"><label>🔍 Buscar placa</label><div class="ac-wrap"><input type="text" id="f-placa" placeholder="Digite a placa..." autocomplete="off" oninput="this.value=this.value.toUpperCase();sugPlaca('f-placa','f-placa-d');filtrarAposDebounce()" onfocus="sugPlaca('f-placa','f-placa-d')" onkeydown="if(event.key==='Enter'){hide('f-placa-d');carregarApos();}" /><div class="ac-drop hidden" id="f-placa-d"></div></div></div>
             <button class="btn btn-p" onclick="carregarApos()">Filtrar</button>
-            <button class="btn btn-g" onclick="setV('f-colab','');carregarApos()">Limpar</button>
+            <button class="btn btn-g" onclick="setV('f-colab','');setV('f-placa','');carregarApos()">Limpar</button>
             
           </div>
         </div>
@@ -582,6 +583,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           </div>
         </div>
 
+        <div class="filter-bar" style="margin-bottom:20px">
+          <h3>Exportar uma placa</h3>
+          <div class="filter-row">
+            <div class="fg" style="min-width:200px;flex:1.4"><label>🔍 Buscar placa</label><div class="ac-wrap"><input type="text" id="exp-placa" placeholder="Digite a placa..." autocomplete="off" oninput="this.value=this.value.toUpperCase();sugPlaca('exp-placa','exp-placa-d')" onfocus="sugPlaca('exp-placa','exp-placa-d')" /><div class="ac-drop hidden" id="exp-placa-d"></div></div></div>
+            <button class="btn btn-p" onclick="exportarPlaca('mes')">Baixar período selecionado</button>
+            <button class="btn btn-g" onclick="exportarPlaca('todos')">Baixar tudo dela</button>
+          </div>
+        </div>
+
         <div id="export-geral-section" class="hidden">
           <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:4px">Exportação Geral</div>
           <div style="color:var(--text2);font-size:13px;margin-bottom:16px">Baixe dados de todas as unidades em um único arquivo</div>
@@ -623,7 +633,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // ══════════════════════════════════════
 //  VERSÃO DO APP
 // ══════════════════════════════════════
-const APP_VERSION = '1.0.11'; // ← atualize este número a cada deploy
+const APP_VERSION = '1.0.12'; // ← atualize este número a cada deploy
 
 // ══════════════════════════════════════
 //  CONFIGURAÇÃO — único Supabase
@@ -1086,16 +1096,18 @@ async function carregarApos() {
   const mes=parseInt(document.getElementById('f-mes').value);
   const ano=parseInt(document.getElementById('f-ano').value);
   const colab=(document.getElementById('f-colab').value||'').trim();
-  const ini=`${ano}-${String(mes).padStart(2,'0')}-01`;
-  const fim=`${ano}-${String(mes).padStart(2,'0')}-${new Date(ano,mes,0).getDate()}`;
+  const placaF=(document.getElementById('f-placa').value||'').trim();
+  const ini=mes===0?`${ano}-01-01`:`${ano}-${String(mes).padStart(2,'0')}-01`;
+  const fim=mes===0?`${ano}-12-31`:`${ano}-${String(mes).padStart(2,'0')}-${new Date(ano,mes,0).getDate()}`;
   const tbody=document.getElementById('apo-tbody');
   tbody.innerHTML='<tr><td class="td-empty" colspan="10">Carregando...</td></tr>';
   let q=sb.from('apontamentos').select('*').eq('unidade',unitId).gte('data',ini).lte('data',fim).order('data',{ascending:false}).order('hora_ini',{ascending:false});
   if(colab)q=q.ilike('colaborador','%'+colab+'%');
+  if(placaF)q=q.ilike('placa','%'+placaF+'%');
   const{data,error}=await q;
   if(error||!data){tbody.innerHTML='<tr><td class="td-empty" colspan="10">Erro ao carregar</td></tr>';return;}
   _aposFilter=data;
-  document.getElementById('apo-sub').textContent=`${MESES[mes]} ${ano} — ${data.length} registro(s)`;
+  document.getElementById('apo-sub').textContent=`${mes===0?'Ano todo':MESES[mes]} ${ano} — ${data.length} registro(s)`;
   if(!data.length){tbody.innerHTML='<tr><td class="td-empty" colspan="10">Nenhum apontamento</td></tr>';return;}
   tbody.innerHTML=data.map(a=>{
     const badge=a.tipo==='CORRETIVA'?'b-cor':a.tipo==='PREVENTIVA'?'b-pre':'b-ped';
@@ -1120,6 +1132,22 @@ function sugColab(inputId,dropId){
       e.preventDefault();
       inp.value=nomes[i];drop.classList.add('hidden');
       if(inputId==='f-colab')carregarApos();
+    });
+  });
+  drop.classList.remove('hidden');
+}
+// Caixa de busca de placa com sugestões
+function sugPlaca(inputId,dropId){
+  const inp=document.getElementById(inputId),drop=document.getElementById(dropId);if(!inp||!drop)return;
+  const q=_norm(inp.value.trim()).replace(/[-\s]/g,'');
+  const placas=(CACHE.placas||[]).filter(pl=>!q||_norm(pl).replace(/[-\s]/g,'').includes(q));
+  if(!placas.length){drop.innerHTML='<div class="ac-empty">Nenhuma placa encontrada</div>';drop.classList.remove('hidden');return;}
+  drop.innerHTML=placas.slice(0,20).map(pl=>`<div class="ac-item">${pl}</div>`).join('');
+  drop.querySelectorAll('.ac-item').forEach((el,i)=>{
+    el.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      inp.value=placas[i];drop.classList.add('hidden');
+      if(inputId==='f-placa')carregarApos();
     });
   });
   drop.classList.remove('hidden');
@@ -1151,6 +1179,24 @@ async function exportarColab(modo){
   if(error){toast('Erro ao buscar: '+error.message,'err');return;}
   if(!data||!data.length){toast('Nenhum apontamento para "'+colab+'"'+(modo==='mes'?' neste período':''),'err');return;}
   xlsxDown(rowsApoExcel(data),'Apontamento_'+nomeArq(colab)+(modo==='mes'?'_'+MESES[mes]+'_'+ano:''));
+}
+
+// Exporta uma placa (período selecionado ou todo o histórico)
+async function exportarPlaca(modo){
+  const placa=(document.getElementById('exp-placa').value||'').trim();
+  if(!placa){toast('Digite a placa','err');return;}
+  toast('Preparando...','');
+  const mes=parseInt(document.getElementById('exp-mes').value),ano=parseInt(document.getElementById('exp-ano').value);
+  let q=sb.from('apontamentos').select('*').eq('unidade',unitId).order('data',{ascending:false}).order('hora_ini',{ascending:false});
+  const exato=(CACHE.placas||[]).some(pl=>pl===placa);
+  q=exato?q.eq('placa',placa):q.ilike('placa','%'+placa+'%');
+  if(modo==='mes'){
+    q=q.gte('data',`${ano}-${String(mes).padStart(2,'0')}-01`).lte('data',`${ano}-${String(mes).padStart(2,'0')}-${new Date(ano,mes,0).getDate()}`);
+  }
+  const{data,error}=await q;
+  if(error){toast('Erro ao buscar: '+erroAmigavel(error),'err');return;}
+  if(!data||!data.length){toast('Nenhum apontamento para a placa "'+placa+'"'+(modo==='mes'?' neste período':''),'err');return;}
+  xlsxDown(rowsApoExcel(data),'Apontamento_'+nomeArq(placa)+(modo==='mes'?'_'+MESES[mes]+'_'+ano:''));
 }
 
 async function delApo(id){if(!confirm('Excluir?'))return;await sb.from('apontamentos').delete().eq('id',id);toast('Excluído','ok');carregarApos();atualizarStats();}
@@ -1611,7 +1657,7 @@ function populateSelects(){
   const y=new Date().getFullYear();const m=new Date().getMonth()+1;
   const mesOpts=MESES.slice(1).map((n,i)=>`<option value="${i+1}" ${i+1===m?'selected':''}>${n}</option>`).join('');
   const anoOpts=Array.from({length:6},(_,i)=>{const yr=y+1-i;return`<option value="${yr}" ${yr===y?'selected':''}>${yr}</option>`;}).join('');
-  ['f-mes','bf-mes','d-mes','exp-mes'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=(id==='d-mes'?'<option value="">Todos</option>':'')+mesOpts;});
+  ['f-mes','bf-mes','d-mes','exp-mes'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=(id==='d-mes'?'<option value="">Todos</option>':id==='f-mes'?'<option value="0">Ano todo</option>':'')+mesOpts;});
   ['f-ano','bf-ano','d-ano','exp-ano'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=anoOpts;});
 }
 function show(id){document.getElementById(id)?.classList.remove('hidden');}
